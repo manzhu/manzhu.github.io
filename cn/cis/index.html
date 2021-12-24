@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css" integrity="sha256-2H3fkXt6FEmrReK448mDVGKb3WW2ZZw35gI7vqHOE4Y=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.m4n2.com","root":"/","images":"/images","scheme":"Gemini","version":"8.6.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<meta name="description" content="在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 服务发布之 F5-BIGIP">
+<meta property="og:url" content="http://www.m4n2.com/cn/cis/index.html">
+<meta property="og:site_name" content="曼谈">
+<meta property="og:description" content="在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量">
+<meta property="og:locale">
+<meta property="og:image" content="http://www.m4n2.com/cn/cis/NodePort.png">
+<meta property="og:image" content="http://www.m4n2.com/cn/cis/ClusterIP.png">
+<meta property="article:published_time" content="2021-12-24T09:44:22.970Z">
+<meta property="article:modified_time" content="2021-12-24T09:44:22.970Z">
+<meta property="article:author" content="阿曼">
+<meta property="article:tag" content="cis">
+<meta property="article:tag" content="bigip controller">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.m4n2.com/cn/cis/NodePort.png">
+
+
+<link rel="canonical" href="http://www.m4n2.com/cn/cis/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"cn","comments":true,"permalink":"http://www.m4n2.com/cn/cis/","path":"cn/cis/","title":"Kubernetes 服务发布之 F5-BIGIP"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Kubernetes 服务发布之 F5-BIGIP | 曼谈</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">曼谈</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Go the Extra Mile</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#NodePort"><span class="nav-number">1.</span> <span class="nav-text">NodePort</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClusterIP"><span class="nav-number">2.</span> <span class="nav-text">ClusterIP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%BA%94%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">部署应用</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-overview">
+            <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="阿曼"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">阿曼</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="cn">
+    <link itemprop="mainEntityOfPage" href="http://www.m4n2.com/cn/cis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="阿曼">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="曼谈">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kubernetes 服务发布之 F5-BIGIP
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-12-24 17:44:22" itemprop="dateCreated datePublished" datetime="2021-12-24T17:44:22+08:00">2021-12-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
+<span id="more"></span>
+
+<p>F5 通过官方发布的 CIS 来实现 BIG-IP 与 k8s 集群的整合. CIS 的全称是 F5 BIG-IP Container Ingress Services, 之前也被称为 BIGIP Controller.  它在 k8s 中作为一个 pod 的形式出现, 其作用主要负责监控 k8s 中 service/pod 的变化并将其发布到 BIGIP 上. CIS 以 NodePort 或者是 ClusterIP的方式在 BIG-IP 上创建 monitor, pool, virtual server 来发布服务. </p>
+<h2 id="NodePort"><a href="#NodePort" class="headerlink" title="NodePort"></a>NodePort</h2><p>通过 NodePort 发布应用时, BIG-IP 会将流量转发到 Node 上暴露的 NodePort 端口 (32771), 流量进入 Node 的 IP 10.1.10.100 与 10.1.10.200 后, 通过 kube-proxy 转发到对应的 pod 成员中(10.244.1.2 与 10.244.2.2). 所以在 NodePort 模式中, BIG-IP 中看到的 pool member IP 是 Node 的 IP 和端口.  </p>
+<p>如下图(转自官网):</p>
+<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/NodePort.png" class=""></div>
+
+<p>下面我们就来将一台 BIG-IP 整合到 k8s中:</p>
+<ul>
+<li><p>在 BIG-IP 上创建partition: k8s</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
+<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
+<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 CIS: cis_nodeport.yaml. 这里需要注意修改 <code>--bigip-url</code> 将其指向 BIG-IP management IP 地址. <code>--bigip-partition</code> 中指定 BIG-IP 上的 partition 名称, 在这里是 k8s. 另外需要注意的是 <code>--pool-member-type</code> 是 nodeport.</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">name: k8s-bigip-ctlr-deployment</span><br><span class="line">namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line"># DO NOT INCREASE REPLICA COUNT</span><br><span class="line">replicas: 1</span><br><span class="line">selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">    app: k8s-bigip-ctlr-deployment</span><br><span class="line">template:</span><br><span class="line">    metadata:</span><br><span class="line">    labels:</span><br><span class="line">        app: k8s-bigip-ctlr-deployment</span><br><span class="line">    spec:</span><br><span class="line">    # Name of the Service Account bound to a Cluster Role with the required</span><br><span class="line">    # permissions</span><br><span class="line">    containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">        image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">        env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: password</span><br><span class="line">        command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">        args: [</span><br><span class="line">            # See the k8s-bigip-ctlr documentation for information about</span><br><span class="line">            # all config options</span><br><span class="line">            # https://clouddocs.f5.com/containers/latest/</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=&lt;ip_address-or-hostname&gt;&quot;,</span><br><span class="line">            &quot;--bigip-partition=&lt;name_of_partition&gt;&quot;,</span><br><span class="line">            &quot;--pool-member-type=nodeport&quot;,</span><br><span class="line">            &quot;--insecure&quot;,</span><br><span class="line">            ]</span><br><span class="line">    serviceAccountName: bigip-ctlr</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 CIS 部署</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f  cis_nodeport.yaml</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="ClusterIP"><a href="#ClusterIP" class="headerlink" title="ClusterIP"></a>ClusterIP</h2><p>通过 ClusterIP 发布应用时, BIGIP 将流量封装在 VXLAN 的tunnel 中并直接转发到 pod. 通过这种方式, 应用流量无需通过 kube-proxy 进行二次转发因此更加高效, 所以在 BIGIP 上我们看到 pool member 的地址是 pod 的 IP 地址. </p>
+<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/ClusterIP.png" class=""></div>
+
+<p>BIG-IP 可以直接得知 pod 中两个 container 实例的 IP 地址: 10.244.1.2 和 10.244.2.2, 同时流量也不用再通过 kube-proxy 进行转发. </p>
+<p>部署 Cluster IP 模式的 CIS 步骤如下:</p>
+<ul>
+<li><p>在 BIG-IP 上创建 partition: k8s</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
+<li><p>在 BIG-IP 上创建 VXLAN Tunnel:</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tmsh create net self 172.16.1.28/16 &#123; allow-service all vlan Internal &#125; </span><br><span class="line">tmsh create net tunnels vxlan fl-vxlan port 8472 flooding-type none </span><br><span class="line">tmsh create net tunnels tunnel flannel_vxlan key 1 profile fl-vxlan local-address 172.16.1.28 </span><br><span class="line">tmsh create net self 10.244.100.3 address 10.244.100.3/16 allow-service none vlan flannel_vxlan </span><br></pre></td></tr></table></figure>
+<p>  其中 172.16.1.28 是 BIG-IP 在 K8S 集群中的 Node IP 地址, 用来和集群中的其他 Node 进行通讯; 10.244.100.3 则是 pod 的 ip 地址, 用来和 pod 里的container 进行通讯.</p>
+</li>
+<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
+<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
+<li><p>在 k8s 集群中, 将 BIG-IP 抽象为一个 Node 对象. 这里的 VtepMAC 地址 <code>00:50:56:86:b4:99</code> 是 BIG-IP 中 flannel_vxlan 的 MAC 地址: <code>tmsh show net tunnels tunnel flannel_vxlan all-properties</code> </p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Node</span><br><span class="line">metadata:</span><br><span class="line">name: bigip</span><br><span class="line">annotations:</span><br><span class="line">    # Provide the MAC address of the BIG-IP VXLAN tunnel</span><br><span class="line">    flannel.alpha.coreos.com/backend-data: &#x27;&#123;&quot;VtepMAC&quot;:&quot;00:50:56:86:b4:99&quot;&#125;&#x27;</span><br><span class="line">    flannel.alpha.coreos.com/backend-type: &quot;vxlan&quot;</span><br><span class="line">    flannel.alpha.coreos.com/kube-subnet-manager: &quot;true&quot;</span><br><span class="line">    # Provide the IP address you assigned as the BIG-IP VTEP</span><br><span class="line">    flannel.alpha.coreos.com/public-ip: 172.16.1.28</span><br><span class="line">spec:</span><br><span class="line"># Define the flannel subnet you want to assign to the BIG-IP device.</span><br><span class="line"># Be sure this subnet does not collide with any other Nodes&#x27; subnets.</span><br><span class="line">podCIDR: 10.244.100.0/24</span><br></pre></td></tr></table></figure></li>
+<li><p>ClusterIP 的 cis_clusterip.yaml:</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: k8s-bigip-ctlr-deployment</span><br><span class="line">  namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: k8s-bigip-ctlr</span><br><span class="line">      labels:</span><br><span class="line">        app: k8s-bigip-ctlr</span><br><span class="line">    spec:</span><br><span class="line">      serviceAccountName: k8s-bigip-ctlr</span><br><span class="line">      containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">          image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">          imagePullPolicy: IfNotPresent</span><br><span class="line">          env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: password</span><br><span class="line">          command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">          args: [</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=172.16.1.28&quot;,</span><br><span class="line">            &quot;--bigip-partition=k8s&quot;,</span><br><span class="line">            &quot;--namespace=default&quot;,</span><br><span class="line">            &quot;--pool-member-type=cluster&quot;,</span><br><span class="line">            &quot;--flannel-name=/Common/flannel_vxlan&quot;,</span><br><span class="line">            &quot;--insecure=true&quot;</span><br><span class="line">            ]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>应用 YAML 完成 CIS 部署  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f  cis_clusterip.yaml</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>完成 CIS 的部署后, 我们就可以尝试在 k8s 集群中部署应用并查看 BIG-IP 上的发布情况. </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  namespace: default</span><br><span class="line">  labels:</span><br><span class="line">    f5type: virtual-server</span><br><span class="line">data:</span><br><span class="line">  schema: &quot;f5schemadb://bigip-virtual-server_v0.1.7.json&quot;</span><br><span class="line">  data: |</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;virtualServer&quot;: &#123;</span><br><span class="line">        &quot;frontend&quot;: &#123;</span><br><span class="line">          &quot;balance&quot;: &quot;round-robin&quot;,</span><br><span class="line">          &quot;mode&quot;: &quot;http&quot;,</span><br><span class="line">          &quot;partition&quot;: &quot;k8s&quot;,</span><br><span class="line">          &quot;virtualAddress&quot;: &#123;</span><br><span class="line">            &quot;bindAddr&quot;: &quot;10.88.0.162&quot;,</span><br><span class="line">            &quot;port&quot;: 80</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;backend&quot;: &#123;</span><br><span class="line">          &quot;serviceName&quot;: &quot;f5-hello-world&quot;,</span><br><span class="line">          &quot;servicePort&quot;: 8080,</span><br><span class="line">          &quot;healthMonitors&quot;: [&#123;</span><br><span class="line">            &quot;interval&quot;: 5,</span><br><span class="line">            &quot;protocol&quot;: &quot;http&quot;,</span><br><span class="line">            &quot;send&quot;: &quot;HEAD / HTTP/1.0\r\n\r\n&quot;,</span><br><span class="line">            &quot;timeout&quot;: 16</span><br><span class="line">          &#125;]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  replicas: 100</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        run: f5-hello-world</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: f5-hello-world</span><br><span class="line">        image: &quot;f5devcentral/f5-hello-world:latest&quot;</span><br><span class="line">        imagePullPolicy: IfNotPresent</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 8080</span><br><span class="line">          protocol: TCP</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  labels:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">  - port: 8080</span><br><span class="line">    protocol: TCP</span><br><span class="line">    targetPort: 8080</span><br><span class="line">  type: ClusterIP</span><br><span class="line">  selector:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在 BIG-IP 上的 pool 以及 virtual server:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"># tmsh list ltm pool /k8s/*</span><br><span class="line"></span><br><span class="line">ltm pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world &#123;</span><br><span class="line">    members &#123;</span><br><span class="line">        /k8s/10.244.2.172%0:webcache &#123;</span><br><span class="line">            address 10.244.2.172</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">        /k8s/10.244.2.173%0:webcache &#123;</span><br><span class="line">            address 10.244.2.173</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    monitor /k8s/cfgmap_default_f5-hello-world_f5-hello-world_0_http</span><br><span class="line">    partition k8s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># tmsh list ltm virtual /k8s/*</span><br><span class="line">ltm virtual /k8s/default_f5-hello-world &#123;</span><br><span class="line">    creation-time 2021-08-05:05:36:26</span><br><span class="line">    destination /k8s/10.88.0.162%0:http</span><br><span class="line">    ip-protocol tcp</span><br><span class="line">    last-modified-time 2021-08-05:05:36:26</span><br><span class="line">    mask 255.255.255.255</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    partition k8s</span><br><span class="line">    pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world</span><br><span class="line">    profiles &#123;</span><br><span class="line">        http &#123; &#125;</span><br><span class="line">        tcp &#123; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    source 0.0.0.0/0</span><br><span class="line">    source-address-translation &#123;</span><br><span class="line">        type automap</span><br><span class="line">    &#125;</span><br><span class="line">    translate-address enabled</span><br><span class="line">    translate-port enabled</span><br><span class="line">    vs-index 15</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到将 BIG-IP 做为 ingress 部署后, BIG-IP 可以自动探测到 k8s 集群中的应用发布变化并在 BIG-IP 上创建相应配置. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="reward-container">
+  <div>如果觉得我的文章对您有用，请随意打赏。您的支持将鼓励我继续创作！</div>
+  <button>
+    赞赏
+  </button>
+  <div class="post-reward">
+      <div>
+        <img src="/images/wechatpay.jpg" alt="阿曼 微信">
+        <span>微信</span>
+      </div>
+      <div>
+        <img src="/images/alipay.jpg" alt="阿曼 支付宝">
+        <span>支付宝</span>
+      </div>
+
+  </div>
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>阿曼
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://www.m4n2.com/cn/cis/" title="Kubernetes 服务发布之 F5-BIGIP">http://www.m4n2.com/cn/cis/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/cis/" rel="tag"># cis</a>
+              <a href="/tags/bigip-controller/" rel="tag"># bigip controller</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cn/eve-ng-connect-external-network/" rel="prev" title="eve-ng-connect-external-network">
+                  <i class="fa fa-chevron-left"></i> eve-ng-connect-external-network
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">阿曼</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '64px',
+  right: 'unset',
+  left: '32px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: true
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"manzhu","repo":"manzhu.github.io","client_id":"e2a5e8f8ea9068c03cbf","client_secret":"eb6f5d0d426617acedb44151826b74c9ff497d2e","admin_user":"manzhu","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"35d805745169aad182ebf38b4364071a"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+</body>
+</html>

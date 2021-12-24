@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css" integrity="sha256-2H3fkXt6FEmrReK448mDVGKb3WW2ZZw35gI7vqHOE4Y=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.m4n2.com","root":"/","images":"/images","scheme":"Gemini","version":"8.6.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<meta name="description" content="nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nmap">
+<meta property="og:url" content="http://www.m4n2.com/cn/nmap/index.html">
+<meta property="og:site_name" content="曼谈">
+<meta property="og:description" content="nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描.">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-09-01T12:49:16.000Z">
+<meta property="article:modified_time" content="2021-12-24T09:44:22.971Z">
+<meta property="article:author" content="阿曼">
+<meta property="article:tag" content="nmap">
+<meta property="article:tag" content="scanner">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://www.m4n2.com/cn/nmap/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"cn","comments":true,"permalink":"http://www.m4n2.com/cn/nmap/","path":"cn/nmap/","title":"nmap"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>nmap | 曼谈</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">曼谈</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Go the Extra Mile</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%B5%8B%E7%9B%AE%E6%A0%87%E4%B8%BB%E6%9C%BA%E7%9B%91%E5%90%AC%E7%AB%AF%E5%8F%A3"><span class="nav-number">1.</span> <span class="nav-text">检测目标主机监听端口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8C%9C%E6%B5%8B%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%89%88%E6%9C%AC"><span class="nav-number">2.</span> <span class="nav-text">猜测操作系统版本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%B5%8B%E4%B8%BB%E6%9C%BA%E5%89%8D%E6%98%AF%E5%90%A6%E6%9C%89-firewall"><span class="nav-number">3.</span> <span class="nav-text">检测主机前是否有 firewall</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%AB%E6%8F%8F-IPV6-%E5%9C%B0%E5%9D%80"><span class="nav-number">4.</span> <span class="nav-text">扫描 IPV6 地址</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E6%89%AB%E6%8F%8F%E5%AD%90%E7%BD%91%E5%86%85-up-%E4%B8%BB%E6%9C%BA"><span class="nav-number">5.</span> <span class="nav-text">快速扫描子网内 up 主机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%BE%E7%A4%BA-nmap-%E5%8F%91%E5%87%BA%E7%9A%84%E5%8C%85"><span class="nav-number">6.</span> <span class="nav-text">显示 nmap 发出的包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%97%E5%87%BA-nmap-%E6%89%AB%E6%8F%8F%E7%BB%93%E6%9E%9C%E7%9A%84%E7%90%86%E7%94%B1"><span class="nav-number">7.</span> <span class="nav-text">列出 nmap 扫描结果的理由</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%B5%8B-TLS-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%94%AF%E6%8C%81%E7%9A%84-cipher-list"><span class="nav-number">8.</span> <span class="nav-text">检测 TLS 服务端支持的 cipher list</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%B5%8B-SSH-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%94%AF%E6%8C%81%E7%9A%84Cipher"><span class="nav-number">9.</span> <span class="nav-text">检测 SSH 服务端支持的Cipher</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-overview">
+            <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="阿曼"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">阿曼</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="cn">
+    <link itemprop="mainEntityOfPage" href="http://www.m4n2.com/cn/nmap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="阿曼">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="曼谈">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          nmap
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-09-01 20:49:16" itemprop="dateCreated datePublished" datetime="2021-09-01T20:49:16+08:00">2021-09-01</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-12-24 17:44:22" itemprop="dateModified" datetime="2021-12-24T17:44:22+08:00">2021-12-24</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/oscp/" itemprop="url" rel="index"><span itemprop="name">oscp</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
+<span id="more"></span>
+
+<h2 id="检测目标主机监听端口"><a href="#检测目标主机监听端口" class="headerlink" title="检测目标主机监听端口"></a>检测目标主机监听端口</h2><p>nmap 可以检测某个 IP, 多个 IP 或者一个网段内 IP 地址的监听端口(默认tcp):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">nmap 10.0.0.1</span><br><span class="line">nmap 10.0.0.1 10.0.0.20 10.0.0.60</span><br><span class="line">nmap 10.0.0.0/24</span><br><span class="line">nmap 10.0.0.*</span><br><span class="line"></span><br><span class="line"># 扫描文件中列出的主机列表</span><br><span class="line">nmap -iL /tmp/test.txt</span><br><span class="line"></span><br><span class="line">cat /tmp/test.txt</span><br><span class="line">server1.cyberciti.biz</span><br><span class="line">192.168.1.0/24</span><br><span class="line">192.168.1.1/24</span><br><span class="line">10.1.2.3</span><br><span class="line">localhost</span><br><span class="line"></span><br><span class="line"># 排除10.0.0.60 和 10.0.0.80</span><br><span class="line">nmap 10.0.0.0/24 --exclude 10.0.0.60,10.0.0.80 </span><br><span class="line"></span><br><span class="line"># 排除exclude.txt文件内主机</span><br><span class="line">nmap 10.0.0.0/24 -iL /tmp/scanlist.txt --excludefile /tmp/exclude.txt</span><br><span class="line"></span><br><span class="line"># 扫描 1~20 主机</span><br><span class="line">nmap 10.0.0.1-20 </span><br></pre></td></tr></table></figure>
+
+
+<h2 id="猜测操作系统版本"><a href="#猜测操作系统版本" class="headerlink" title="猜测操作系统版本"></a>猜测操作系统版本</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># 对主机进行全面检查: OS detection, version detection, script scanning, and traceroute</span><br><span class="line">nmap -v -A 192.168.1.254</span><br><span class="line"></span><br><span class="line"># 对主机只进行操作系统猜测, 当Nmap无法确定所检测的操作系统时，会尽可能地提供最相近的匹配，Nmap默认 进行这种匹配，使用上述任一个选项使得Nmap的推测更加有效</span><br><span class="line">nmap -v -O --osscan-guess 10.0.0.1</span><br><span class="line">nmap -v -O --osscan-guess --fuzzy 10.0.0.1</span><br></pre></td></tr></table></figure>
+
+<h2 id="检测主机前是否有-firewall"><a href="#检测主机前是否有-firewall" class="headerlink" title="检测主机前是否有 firewall"></a>检测主机前是否有 firewall</h2><p>用来检测主机前是否有防火墙. -sA 也被称为 ACK Scan. 注意其目的不是绕过防火墙, 而是检测是否有防火墙存在. 当被检测主机接受到 ACK 时, 无论端口是否处于 open 状态都会直接返回 RST. </p>
+<ul>
+<li>如果 nmap 收到 RST 包, 则表示数据包并没有经过防火墙; </li>
+<li>如果收到 ICMP unreachable error (type 3, code 1, 2, 3, 9, 10, or 13), 或者没有任何回应数据包则表示 ACK 可能被防火墙丢弃.</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># nmap -sA 10.154.172.172</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:31 CST</span><br><span class="line">Nmap scan report for 10.154.172.172</span><br><span class="line">Host is up (0.00070s latency).</span><br><span class="line">All 1000 scanned ports on 10.154.172.172 are filtered</span><br><span class="line">MAC Address: 00:50:56:86:47:46 (VMware)</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="扫描-IPV6-地址"><a href="#扫描-IPV6-地址" class="headerlink" title="扫描 IPV6 地址"></a>扫描 IPV6 地址</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nmap -6 IPv6-Address-Here</span><br><span class="line">nmap -6 server1.cyberciti.biz</span><br><span class="line">nmap -6 2607:f0d0:1002:51::4</span><br><span class="line">nmap -v A -6 2607:f0d0:1002:51::4</span><br></pre></td></tr></table></figure>
+
+<h2 id="快速扫描子网内-up-主机"><a href="#快速扫描子网内-up-主机" class="headerlink" title="快速扫描子网内 up 主机"></a>快速扫描子网内 up 主机</h2><p>在特权账号下 nmap 使用 ICMP echo request, TCP SYN to port 443, TCP ACK to port 80, and an ICMP timestamp 来探测网络中的主机, 而对于非特权用户, nmap 只会使用 80 或者 443 来进行扫描. </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"># nmap -sP 10.88.0.0/24</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:00 CST</span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up (0.00089s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.115</span><br><span class="line">Host is up (0.0010s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5C:19 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.116</span><br><span class="line">Host is up (0.00062s latency).</span><br><span class="line">MAC Address: 00:50:56:86:3C:3A (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.129</span><br><span class="line">Host is up (0.00051s latency).</span><br><span class="line">MAC Address: 00:50:56:86:90:5D (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.153</span><br><span class="line">Host is up (0.00083s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5A:02 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.162</span><br><span class="line">Host is up (0.0042s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.200</span><br><span class="line">Host is up.</span><br><span class="line">Nmap done: 256 IP addresses (7 hosts up) scanned in 3.98 seconds</span><br></pre></td></tr></table></figure>
+
+<h2 id="显示-nmap-发出的包"><a href="#显示-nmap-发出的包" class="headerlink" title="显示 nmap 发出的包"></a>显示 nmap 发出的包</h2><p>另外如果要观察 nmap 发送了哪些扫描包, 可以加上 <code>--packet-trace</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip 10.88.0.0/24</span><br></pre></td></tr></table></figure>
+
+<h2 id="列出-nmap-扫描结果的理由"><a href="#列出-nmap-扫描结果的理由" class="headerlink" title="列出 nmap 扫描结果的理由"></a>列出 nmap 扫描结果的理由</h2><p><code>--reason</code> 可以写明 nmap 得出扫描结果的依据, 比如下面的例子中 nmap 是收到了 ICMP echo-reply 来判定 10.88.0.105 处于 up 状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip --reason 10.88.0.0/24</span><br><span class="line"></span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up, received echo-reply ttl 255 (0.00041s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br></pre></td></tr></table></figure>
+
+<h2 id="检测-TLS-服务端支持的-cipher-list"><a href="#检测-TLS-服务端支持的-cipher-list" class="headerlink" title="检测 TLS 服务端支持的 cipher list"></a>检测 TLS 服务端支持的 cipher list</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line">$ nmap --script ssl-enum-ciphers -p 443 phishme.com</span><br><span class="line"></span><br><span class="line">Starting Nmap 6.25 ( http://nmap.org ) at 2014-10-21 16:56 PDT</span><br><span class="line">Nmap scan report <span class="keyword">for</span> phishme.com (198.90.20.111)</span><br><span class="line">Host is up (0.011s latency).</span><br><span class="line">PORT STATE SERVICE</span><br><span class="line">443/tcp open https</span><br><span class="line">| ssl-enum-ciphers:</span><br><span class="line">| SSLv3:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.0:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.1:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.2:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">|_ least strength: strong</span><br><span class="line"></span><br><span class="line">Nmap <span class="keyword">done</span>: 1 IP address (1 host up) scanned <span class="keyword">in</span> 3.46 seconds</span><br></pre></td></tr></table></figure>
+
+<h2 id="检测-SSH-服务端支持的Cipher"><a href="#检测-SSH-服务端支持的Cipher" class="headerlink" title="检测 SSH 服务端支持的Cipher"></a>检测 SSH 服务端支持的Cipher</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"># nmap --script ssh2-enum-algos -sV -p 22 10.155.216.4</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-01 20:58 CST</span><br><span class="line">Nmap scan report for 10.155.216.4</span><br><span class="line">Host is up (0.0011s latency).</span><br><span class="line"></span><br><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 7.4 (protocol 2.0)</span><br><span class="line">| ssh2-enum-algos:</span><br><span class="line">|   kex_algorithms: (4)</span><br><span class="line">|       ecdh-sha2-nistp256</span><br><span class="line">|       ecdh-sha2-nistp384</span><br><span class="line">|       diffie-hellman-group14-sha1</span><br><span class="line">|       diffie-hellman-group-exchange-sha1</span><br><span class="line">|   server_host_key_algorithms: (5)</span><br><span class="line">|       ssh-rsa</span><br><span class="line">|       rsa-sha2-512</span><br><span class="line">|       rsa-sha2-256</span><br><span class="line">|       ecdsa-sha2-nistp256</span><br><span class="line">|       ssh-ed25519</span><br><span class="line">|   encryption_algorithms: (8)</span><br><span class="line">|       aes128-gcm@openssh.com</span><br><span class="line">|       aes256-gcm@openssh.com</span><br><span class="line">|       aes128-cbc</span><br><span class="line">|       aes256-cbc</span><br><span class="line">|       aes128-ctr</span><br><span class="line">|       aes192-ctr</span><br><span class="line">|       aes256-ctr</span><br><span class="line">|       aes192-cbc</span><br><span class="line">|   mac_algorithms: (1)</span><br><span class="line">|       hmac-sha1</span><br><span class="line">|   compression_algorithms: (2)</span><br><span class="line">|       none</span><br><span class="line">|_      zlib@openssh.com</span><br><span class="line"></span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="reward-container">
+  <div>如果觉得我的文章对您有用，请随意打赏。您的支持将鼓励我继续创作！</div>
+  <button>
+    赞赏
+  </button>
+  <div class="post-reward">
+      <div>
+        <img src="/images/wechatpay.jpg" alt="阿曼 微信">
+        <span>微信</span>
+      </div>
+      <div>
+        <img src="/images/alipay.jpg" alt="阿曼 支付宝">
+        <span>支付宝</span>
+      </div>
+
+  </div>
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>阿曼
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://www.m4n2.com/cn/nmap/" title="nmap">http://www.m4n2.com/cn/nmap/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/nmap/" rel="tag"># nmap</a>
+              <a href="/tags/scanner/" rel="tag"># scanner</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cn/gitlab-install/" rel="prev" title="Ubuntu 18.04 安装 gitlab & gitlab-runner">
+                  <i class="fa fa-chevron-left"></i> Ubuntu 18.04 安装 gitlab & gitlab-runner
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/cn/build-docker-image/" rel="next" title="轻松创建 docker image">
+                  轻松创建 docker image <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">阿曼</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '64px',
+  right: 'unset',
+  left: '32px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: true
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"manzhu","repo":"manzhu.github.io","client_id":"e2a5e8f8ea9068c03cbf","client_secret":"eb6f5d0d426617acedb44151826b74c9ff497d2e","admin_user":"manzhu","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"cc8b0a58303d8361426941219374bac8"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+</body>
+</html>

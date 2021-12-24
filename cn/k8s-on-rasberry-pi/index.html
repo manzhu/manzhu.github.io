@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css" integrity="sha256-2H3fkXt6FEmrReK448mDVGKb3WW2ZZw35gI7vqHOE4Y=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.m4n2.com","root":"/","images":"/images","scheme":"Gemini","version":"8.6.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<meta name="description" content="提到 raspberry pi 相信大家都不陌生, 简单来说它就是一台名片大小基于 ARM 架构的计算机. 经过几代的发展 raspberry pi 的硬件配置有了长足的进步. 在目前最新的 4b 版本上, raspberry pi 可以提供 4 核, 8GB RAM 的配置. 这也使得它的可玩性大大提高. 最近恰好在学习 Kubernetes, 所以就想到用 raspberry pi 来组一台">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在树莓派上点亮你的 Kubernetes 集群">
+<meta property="og:url" content="http://www.m4n2.com/cn/k8s-on-rasberry-pi/index.html">
+<meta property="og:site_name" content="曼谈">
+<meta property="og:description" content="提到 raspberry pi 相信大家都不陌生, 简单来说它就是一台名片大小基于 ARM 架构的计算机. 经过几代的发展 raspberry pi 的硬件配置有了长足的进步. 在目前最新的 4b 版本上, raspberry pi 可以提供 4 核, 8GB RAM 的配置. 这也使得它的可玩性大大提高. 最近恰好在学习 Kubernetes, 所以就想到用 raspberry pi 来组一台">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-09-20T03:52:29.000Z">
+<meta property="article:modified_time" content="2021-12-24T09:44:22.971Z">
+<meta property="article:author" content="阿曼">
+<meta property="article:tag" content="raspberry pi">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://www.m4n2.com/cn/k8s-on-rasberry-pi/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"cn","comments":true,"permalink":"http://www.m4n2.com/cn/k8s-on-rasberry-pi/","path":"cn/k8s-on-rasberry-pi/","title":"在树莓派上点亮你的 Kubernetes 集群"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在树莓派上点亮你的 Kubernetes 集群 | 曼谈</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">曼谈</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Go the Extra Mile</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%87%86%E5%A4%87"><span class="nav-number">1.</span> <span class="nav-text">硬件准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E5%87%86%E5%A4%87"><span class="nav-number">2.</span> <span class="nav-text">软件准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.</span> <span class="nav-text">安装步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E6%AD%A5%E5%87%86%E5%A4%87"><span class="nav-number">3.1.</span> <span class="nav-text">初步准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%87%86%E5%A4%87"><span class="nav-number">3.2.</span> <span class="nav-text">系统准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kubernetes-%E5%AE%89%E8%A3%85%E5%87%86%E5%A4%87"><span class="nav-number">3.3.</span> <span class="nav-text">Kubernetes 安装准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#master-%E8%8A%82%E7%82%B9"><span class="nav-number">3.4.</span> <span class="nav-text">master 节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#node-%E8%8A%82%E7%82%B9"><span class="nav-number">3.5.</span> <span class="nav-text">node 节点</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-overview">
+            <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="阿曼"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">阿曼</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="cn">
+    <link itemprop="mainEntityOfPage" href="http://www.m4n2.com/cn/k8s-on-rasberry-pi/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="阿曼">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="曼谈">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在树莓派上点亮你的 Kubernetes 集群
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-09-20 11:52:29" itemprop="dateCreated datePublished" datetime="2021-09-20T11:52:29+08:00">2021-09-20</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-12-24 17:44:22" itemprop="dateModified" datetime="2021-12-24T17:44:22+08:00">2021-12-24</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>提到 raspberry pi 相信大家都不陌生, 简单来说它就是一台名片大小基于 ARM 架构的计算机. 经过几代的发展 raspberry pi 的硬件配置有了长足的进步. 在目前最新的 4b 版本上, raspberry pi 可以提供 4 核, 8GB RAM 的配置. 这也使得它的可玩性大大提高. 最近恰好在学习 Kubernetes, 所以就想到用 raspberry pi 来组一台 Kubernetes 集群. 对于这台集群我希望它拥有低功耗, 安静, 但最主要是可以稳定地运行多个服务. 这篇文章是这个系列的第一篇, 先来介绍如何在一台由4块 raspberry pi 4b 组成的硬件集群上搭建 kubernetes cluster.</p>
+<span id="more"></span>
+
+<h2 id="硬件准备"><a href="#硬件准备" class="headerlink" title="硬件准备"></a>硬件准备</h2><p>我这次选择了 4 台 raspberry pi 4b 8GB 版本. 其中一台 master, 另外三台 node 节点. 树莓派默认需要一个 5V 3A 的 type c 电源以及一个千兆有线网口, 这样如果要部署一个 4 节点的集群就要准备 8 根线 ( 4 根电源线 + 4 根网线). 考虑到布线的简洁清爽, 我为树莓派加装了一个 POE 模块, 有了 POE 模块就可以用一根网线同时提供网络和供电功能, 这样只需要 4 根网线以及一台 POE 交换机/路由器即可解决所有的供电和网络需求. 另外每台树莓派配有一块 64GB 的 sdcard 用来安装系统. </p>
+<h2 id="软件准备"><a href="#软件准备" class="headerlink" title="软件准备"></a>软件准备</h2><p>操作系统方面我们选择目前最新的 LTS 版本, Ubuntu 20.04 版. 我们使用 usbimager  将ubuntu 镜像刷入 sdcard. Kubernetes 安装最新的稳定版本 1.22.2. 需要用到的软件下载地址如下:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://ubuntu.com/download/raspberry-pi">Ubuntu 20.04 64 bit for raspberry pi</a></li>
+<li><a target="_blank" rel="noopener" href="https://gitlab.com/bztsrc/usbimager">usbimage</a></li>
+</ul>
+<h2 id="安装步骤"><a href="#安装步骤" class="headerlink" title="安装步骤"></a>安装步骤</h2><h3 id="初步准备"><a href="#初步准备" class="headerlink" title="初步准备"></a>初步准备</h3><ol>
+<li><p>usbimager 使用非常简单, 在界面中选择下载的20.04镜像并指定目标 sdcard 设备进行写入. 如果 sdcard 上存在其他系统或者分区, 建议可以将这些分区先删除后再进行系统刷入.</p>
+</li>
+<li><p>完成 4 台设备的系统刷入后, 将 sdcard 插入树莓派并连接到POE进行初步测试. 树莓派默认通过 DHCP 获取 IP 地址. 因此如果顺利的话, 可以在路由器的管理界面中看到树莓派分配的 IP 地址. 为了方便今后的使用, 我们可以在此时绑定 MAC 与 IP 地址的分配. 这样 4 台树莓派都获得了固定的 IP 地址. 在我的环境中 4 台树莓派的地址分配如下:</p>
+</li>
+</ol>
+<ul>
+<li>master01: 172.16.0.1</li>
+<li>node01: 172.16.0.11</li>
+<li>node02: 172.16.0.12</li>
+<li>node03: 172.16.0.13</li>
+</ul>
+<h3 id="系统准备"><a href="#系统准备" class="headerlink" title="系统准备"></a>系统准备</h3><p>在<code>所有的树莓派</code>上完成以下准备工作:</p>
+<ol start="0">
+<li><p>更新系统: <code>sudo apt update &amp;&amp; sudo apt dist-upgrade &amp;&amp; apt-get install -y apt-transport-https</code></p>
+</li>
+<li><p>创建自定义用户: <code>sudo adduser manfred</code></p>
+</li>
+<li><p>给予该用户 sudo 权限: <code>sudo usermod -aG sudo manfred</code></p>
+</li>
+<li><p>设置主机名(注意每个node 的名字不同): <code>echo master01 | sudo tee /etc/hostname</code></p>
+</li>
+<li><p>为集群内所有节点添加 hosts 文件映射:</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># cat /etc/hosts</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">172.16.0.1      master01</span><br><span class="line">172.16.0.11     node01</span><br><span class="line">172.16.0.12     node02</span><br><span class="line">172.16.0.13     node03</span><br></pre></td></tr></table></figure></li>
+<li><p>编辑 /boot/firmware/cmdline.txt 并在行末添加:</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1 swapaccount=1</span><br></pre></td></tr></table></figure></li>
+<li><p>重启: <code>sudo reboot</code></p>
+</li>
+<li><p>安装 docker: <code>curl -sSL get.docker.com | sudo sh</code></p>
+</li>
+<li><p>将自己的账号加入 docker 组: <code>sudo usermod -aG docker manfred</code></p>
+</li>
+<li><p>编辑 docker 配置文件并指定中文源: <code>sudo vi /etc/docker/daemon.json</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;exec-opts&quot;: [&quot;native.cgroupdriver=systemd&quot;],</span><br><span class="line">  &quot;log-driver&quot;: &quot;json-file&quot;,</span><br><span class="line">  &quot;log-opts&quot;: &#123;</span><br><span class="line">    &quot;max-size&quot;: &quot;100m&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;storage-driver&quot;: &quot;overlay2&quot;,</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://docker.mirrors.ustc.edu.cn&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>应用上述配置: <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code> </p>
+</li>
+<li><p>开启路由: <code>sudo sed -i &#39;s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g&#39; /etc/sysctl.conf</code></p>
+</li>
+<li><p>重启系统: <code>sudo reboot</code></p>
+</li>
+<li><p>重启后确定 docker 工作正常: docker run hello-world </p>
+</li>
+</ol>
+<p>完成以上步骤后, 下面开始进入 kubernetes 的安装过程.</p>
+<h3 id="Kubernetes-安装准备"><a href="#Kubernetes-安装准备" class="headerlink" title="Kubernetes 安装准备"></a>Kubernetes 安装准备</h3><p>在所有树莓派上执行以下步骤:</p>
+<ol>
+<li>为Kubernetes 设置国内源:<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add - </span><br><span class="line">cat &lt;&lt;EOF &gt;/etc/apt/sources.list.d/kubernetes.list</span><br><span class="line">deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main</span><br><span class="line">EOF  </span><br><span class="line">sudo apt-get update</span><br></pre></td></tr></table></figure></li>
+<li>由于我们安装的版本 1.22.2 比较新, 所以可以手动下载这些镜像并用 tag 命令进行修正:<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sudo docker pull coredns/coredns:1.8.4</span><br><span class="line">sudo docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns:v1.8.4</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sudo docker pull cjk2atmb/kube-controller-manager:v1.22.2</span><br><span class="line">sudo docker tag cjk2atmb/kube-controller-manager:v1.22.2 registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.2</span><br></pre></td></tr></table></figure></li>
+<li>在上述准备工作完成后我们就可以开始安装: <code>sudo apt-get install -y kubelet kubeadm kubectl</code></li>
+</ol>
+<h3 id="master-节点"><a href="#master-节点" class="headerlink" title="master 节点"></a>master 节点</h3><ol>
+<li><p>初始化 Kubernetes master 节点: </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo kubeadm init --image-repository=registry.aliyuncs.com/google_containers --pod-network-cidr=10.244.0.0/16</span><br></pre></td></tr></table></figure></li>
+<li><p>如果一切正常的话在上述命令运行完后会看到如下提示. 将下面的 kubeadm join 命令保存好以备后续添加 node 节点时使用:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Your Kubernetes control-plane has initialized successfully!</span><br><span class="line"></span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">  mkdir -p $HOME/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line"></span><br><span class="line">Alternatively, if you are the root user, you can run:</span><br><span class="line"></span><br><span class="line">  export KUBECONFIG=/etc/kubernetes/admin.conf</span><br><span class="line"></span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run &quot;kubectl apply -f [podnetwork].yaml&quot; with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">Then you can join any number of worker nodes by running the following on each as root:</span><br><span class="line"></span><br><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:xxxxx</span><br></pre></td></tr></table></figure></li>
+<li><p>运行以下命令初始化 kubectl:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line">echo &#x27;source &lt;(kubectl completion bash)&#x27; &gt;&gt; ~/.bashrc</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 flannel 网络组件:<br><code>kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></p>
+</li>
+<li><p>最后确保所有镜像均可正常运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">NAMESPACE     NAME                               READY   STATUS    RESTARTS       AGE</span><br><span class="line">default       demoapp-79b7d5f68b-bp9z2           1/1     Running   0              30h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-kwsng           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-qbmdn           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   etcd-master01                      1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-apiserver-master01            1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-controller-manager-master01   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-flannel-ds-kghwp              1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-flannel-ds-rcjfq              1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-6mksg                   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-w95hs                   1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-scheduler-master01            1/1     Running   5 (41h ago)    42h</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="node-节点"><a href="#node-节点" class="headerlink" title="node 节点"></a>node 节点</h3><ol>
+<li><p>复制之前的 join 命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx --discovery-token-ca-cert-hash sha256:xxxxx </span><br></pre></td></tr></table></figure>
+<p>如果 token 丢失或者过期可以重新生成: <code>kubeadm token create --print-join-command</code> </p>
+</li>
+<li><p>安装完成后用 kubectl get nodes 查看安装情况. 如果 node 一直显示<code>Not Ready</code>, 可以尝试重启 node. 如果 node 没有 role, 可以自己给node 打role 标签: </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl label node node01 node-role.kubernetes.io/worker=worker</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>这样基本完成了Kubernetes 集群的安装. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="reward-container">
+  <div>如果觉得我的文章对您有用，请随意打赏。您的支持将鼓励我继续创作！</div>
+  <button>
+    赞赏
+  </button>
+  <div class="post-reward">
+      <div>
+        <img src="/images/wechatpay.jpg" alt="阿曼 微信">
+        <span>微信</span>
+      </div>
+      <div>
+        <img src="/images/alipay.jpg" alt="阿曼 支付宝">
+        <span>支付宝</span>
+      </div>
+
+  </div>
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>阿曼
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://www.m4n2.com/cn/k8s-on-rasberry-pi/" title="在树莓派上点亮你的 Kubernetes 集群">http://www.m4n2.com/cn/k8s-on-rasberry-pi/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/raspberry-pi/" rel="tag"># raspberry pi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cn/pod-and-service/" rel="prev" title="Pod 与 Service">
+                  <i class="fa fa-chevron-left"></i> Pod 与 Service
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/cn/k8s-nfs-as-pv-pvc/" rel="next" title="k8s 存储初始化之树莓派外接USB硬盘">
+                  k8s 存储初始化之树莓派外接USB硬盘 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">阿曼</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '64px',
+  right: 'unset',
+  left: '32px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: true
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"manzhu","repo":"manzhu.github.io","client_id":"e2a5e8f8ea9068c03cbf","client_secret":"eb6f5d0d426617acedb44151826b74c9ff497d2e","admin_user":"manzhu","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"490667d08fb2cb431496eebcf5b65de1"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+</body>
+</html>

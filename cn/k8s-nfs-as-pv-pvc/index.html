@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css" integrity="sha256-2H3fkXt6FEmrReK448mDVGKb3WW2ZZw35gI7vqHOE4Y=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.m4n2.com","root":"/","images":"/images","scheme":"Gemini","version":"8.6.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<meta name="description" content="在之前的文章中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s 存储初始化之树莓派外接USB硬盘">
+<meta property="og:url" content="http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/index.html">
+<meta property="og:site_name" content="曼谈">
+<meta property="og:description" content="在之前的文章中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-09-26T06:20:10.000Z">
+<meta property="article:modified_time" content="2021-12-24T09:44:22.971Z">
+<meta property="article:author" content="阿曼">
+<meta property="article:tag" content="raspberry pi">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"cn","comments":true,"permalink":"http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/","path":"cn/k8s-nfs-as-pv-pvc/","title":"k8s 存储初始化之树莓派外接USB硬盘"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>k8s 存储初始化之树莓派外接USB硬盘 | 曼谈</title>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">曼谈</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Go the Extra Mile</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87-PV"><span class="nav-number">2.</span> <span class="nav-text">准备 PV</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87-PVC"><span class="nav-number">3.</span> <span class="nav-text">准备 PVC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87-nfs-pod"><span class="nav-number">4.</span> <span class="nav-text">准备 nfs pod</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Service-%E5%87%86%E5%A4%87"><span class="nav-number">5.</span> <span class="nav-text">Service 准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-overview">
+            <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="阿曼"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">阿曼</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="cn">
+    <link itemprop="mainEntityOfPage" href="http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="阿曼">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="曼谈">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k8s 存储初始化之树莓派外接USB硬盘
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-09-26 14:20:10" itemprop="dateCreated datePublished" datetime="2021-09-26T14:20:10+08:00">2021-09-26</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-12-24 17:44:22" itemprop="dateModified" datetime="2021-12-24T17:44:22+08:00">2021-12-24</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
+<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
+<span id="more"></span>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
+<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
+
+<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
+<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
+<ul>
+<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
+<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
+<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
+<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
+<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
+<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
+</ul>
+<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
+<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
+<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
+<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
+</ul>
+<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
+<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
+<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
+<li>ports 中暴露服务端口</li>
+<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
+<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
+<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
+<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
+</ul>
+<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
+
+<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="reward-container">
+  <div>如果觉得我的文章对您有用，请随意打赏。您的支持将鼓励我继续创作！</div>
+  <button>
+    赞赏
+  </button>
+  <div class="post-reward">
+      <div>
+        <img src="/images/wechatpay.jpg" alt="阿曼 微信">
+        <span>微信</span>
+      </div>
+      <div>
+        <img src="/images/alipay.jpg" alt="阿曼 支付宝">
+        <span>支付宝</span>
+      </div>
+
+  </div>
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>阿曼
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/" title="k8s 存储初始化之树莓派外接USB硬盘">http://www.m4n2.com/cn/k8s-nfs-as-pv-pvc/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/raspberry-pi/" rel="tag"># raspberry pi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cn/k8s-on-rasberry-pi/" rel="prev" title="在树莓派上点亮你的 Kubernetes 集群">
+                  <i class="fa fa-chevron-left"></i> 在树莓派上点亮你的 Kubernetes 集群
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/cn/eve-ng-install/" rel="next" title="eve-ng 安装初始化">
+                  eve-ng 安装初始化 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">阿曼</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '64px',
+  right: 'unset',
+  left: '32px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: true
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"manzhu","repo":"manzhu.github.io","client_id":"e2a5e8f8ea9068c03cbf","client_secret":"eb6f5d0d426617acedb44151826b74c9ff497d2e","admin_user":"manzhu","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js","integrity":"sha256-Pmj85ojLaPOWwRtlMJwmezB/Qg8BzvJp5eTzvXaYAfA="},"path_md5":"e9d76c69cc433db8292ac4a5f188f58e"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+</body>
+</html>
