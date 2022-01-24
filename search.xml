@@ -51,22 +51,6 @@
       </tags>
   </entry>
   <entry>
-    <title>eve-ng-connect-external-network</title>
-    <url>/cn/eve-ng-connect-external-network/</url>
-    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
-<span id="more"></span>
-
-<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>vmware esxi</tag>
-        <tag>network</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Kubernetes 服务发布之 F5-BIGIP</title>
     <url>/cn/cis/</url>
     <content><![CDATA[<p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
@@ -141,6 +125,55 @@
       </tags>
   </entry>
   <entry>
+    <title>eve-ng-connect-external-network</title>
+    <url>/cn/eve-ng-connect-external-network/</url>
+    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
+<span id="more"></span>
+
+<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>vmware esxi</tag>
+        <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>eve-ng 安装初始化</title>
+    <url>/cn/eve-ng-install/</url>
+    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
+<span id="more"></span>
+
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
+<p>常用的资源如下:</p>
+<ul>
+<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
+<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
+</ul>
+<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
+<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
+
+<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
+<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
+
+<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>install</tag>
+        <tag>router</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>k8s 存储初始化之树莓派外接USB硬盘</title>
     <url>/cn/k8s-nfs-as-pv-pvc/</url>
     <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
@@ -202,51 +235,6 @@
       </categories>
       <tags>
         <tag>raspberry pi</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Pod 与 Service</title>
-    <url>/cn/pod-and-service/</url>
-    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
-<span id="more"></span>
-
-<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
-
-<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
-<ul>
-<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
-<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
-
-<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
-
-<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>pod</tag>
-        <tag>service</tag>
-        <tag>iptables</tag>
       </tags>
   </entry>
   <entry>
@@ -426,36 +414,85 @@
       </tags>
   </entry>
   <entry>
-    <title>eve-ng 安装初始化</title>
-    <url>/cn/eve-ng-install/</url>
-    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
+    <title>Pod 与 Service</title>
+    <url>/cn/pod-and-service/</url>
+    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
 <span id="more"></span>
 
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
-<p>常用的资源如下:</p>
+<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
 <ul>
-<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
-<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
+<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
+<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
 </ul>
-<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
-<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
 
-<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
-<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
+<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
 
-<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
+<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
 
-<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
+<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
 <script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
       <categories>
-        <category>eve-ng</category>
+        <category>k8s</category>
       </categories>
       <tags>
-        <tag>install</tag>
-        <tag>router</tag>
+        <tag>pod</tag>
+        <tag>service</tag>
+        <tag>iptables</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ohmyzsh</title>
+    <url>/cn/ohmyzsh/</url>
+    <content><![CDATA[<p>最近发现越来越多的同学都转向了zsh。其实 bash 用了好多年也并没有发现不顺手的地方。不过zsh貌似支持许多很酷的第三方插件，所以先记录下在 macos 中如何快速切换到 zsh 环境。</p>
+<span id="more"></span>
+
+<p>安装：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">brew install zsh</span><br></pre></td></tr></table></figure>
+
+<p>改变shell：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chsh -s /bin/zsh</span><br></pre></td></tr></table></figure>
+
+<p>安装 oh-my-zsh：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sh -c &quot;$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)&quot;</span><br></pre></td></tr></table></figure>
+
+<p>配置 oh-my-zsh:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">vi ~/.zshrc</span><br></pre></td></tr></table></figure>
+<p>找到以下内容添加 zsh-autosuggestions 和 zsh-syntax-highlighting 的插件支持</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">plugins=(git macos zsh-autosuggestions zsh-syntax-highlighting)</span><br></pre></td></tr></table></figure>
+
+<p>继续在 .zshrc 添加如下配置, 添加配置后可以在 “$HOME/zsh/aliasrc” 文件中添加需要的命令 alias：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HIST_STAMPS=&quot;yyyy-mm-dd&quot;</span><br><span class="line">HISTSIZE=10000</span><br><span class="line">SAVEHIST=10000</span><br><span class="line">HISTFILE=~/.cache/zshhistory</span><br><span class="line"></span><br><span class="line"># Load aliases and shortcuts if existent.</span><br><span class="line">[ -f &quot;$HOME/zsh/aliasrc&quot; ] &amp;&amp; source &quot;$HOME/zsh/aliasrc&quot;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>安装插件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 这个插件可以自动提示之前输入的命令</span><br><span class="line">git clone git://github.com/zsh-users/zsh-autosuggestions $ZSH_CUSTOM/plugins/zsh-autosuggestions</span><br><span class="line"># 这个插件可以启用语法高亮</span><br><span class="line">git clone git://github.com/zsh-users/zsh-syntax-highlighting $ZSH_CUSTOM/plugins/zsh-syntax-highlighting</span><br></pre></td></tr></table></figure>
+
+<p>应用配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source ~/.zshrc</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>zsh</tag>
       </tags>
   </entry>
 </search>
