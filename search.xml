@@ -51,6 +51,22 @@
       </tags>
   </entry>
   <entry>
+    <title>eve-ng-connect-external-network</title>
+    <url>/cn/eve-ng-connect-external-network/</url>
+    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
+<span id="more"></span>
+
+<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>vmware esxi</tag>
+        <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Kubernetes 服务发布之 F5-BIGIP</title>
     <url>/cn/cis/</url>
     <content><![CDATA[<p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
@@ -155,6 +171,70 @@
       <tags>
         <tag>install</tag>
         <tag>router</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
+    <url>/cn/k8s-nfs-as-pv-pvc/</url>
+    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
+<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
+<span id="more"></span>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
+<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
+
+<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
+<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
+<ul>
+<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
+<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
+<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
+<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
+<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
+<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
+</ul>
+<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
+<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
+<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
+<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
+</ul>
+<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
+<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
+<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
+<li>ports 中暴露服务端口</li>
+<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
+<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
+<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
+<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
+</ul>
+<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
+
+<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>raspberry pi</tag>
       </tags>
   </entry>
   <entry>
@@ -366,6 +446,51 @@
       </tags>
   </entry>
   <entry>
+    <title>Pod 与 Service</title>
+    <url>/cn/pod-and-service/</url>
+    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
+<span id="more"></span>
+
+<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
+<ul>
+<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
+<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
+
+<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
+
+<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>pod</tag>
+        <tag>service</tag>
+        <tag>iptables</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>nmap</title>
     <url>/cn/nmap/</url>
     <content><![CDATA[<p>nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
@@ -415,7 +540,9 @@
 
 <p>相信大家感受到近几年来家用宽带的资费越来越低，电信联通移动的良性竞争使得消费者得到了切实的实惠；但是与此同时商用的网络流量需求却出现了井喷式的需求。各种视频网站，网盘云盘你方唱罢我登场，好不热闹。但是问题来了，这些服务供应商如何能把资源又快又好地传输给分布在天南地北的用户们呢？于是网络服务商们不得不在各地建立起大量的数据中心，这样北京的用户可以从北京的数据中心直接获取资源，海南的用户也可以从靠近海南的数据中心直接获取资源。这个方案听上去非常合理但是其背后的运营成本非常之高！</p>
 <p>这时候就有大聪明们想到了一个方法：一边是被闲置的家用宽带，而另一边是价格昂贵的数据中心。我们是不是可以利用这些家用宽带为商业网络服务呢？</p>
-<p>比如你的邻居今天需要下载一张图片。按照传统的方法他从家里的网络连接到几十，甚至数百公里外的数据中心下载到了这张图片。但是如果这张图片正好在你的电脑里就有，那是不是你可以直接通过网络传输给他？这样他能得到非常好的下载体验，而你也可以为这样的一个“善举”获得网络服务商的回报！而这一切都通过软件在后台自动处理，你甚至没有感觉就获得了服务商发放的收入。目前这样的软件提供商有很多，比如国外的有：</p>
+<p>比如你的邻居今天需要下载一张图片。按照传统的方法他从家里的网络连接到几十，甚至数百公里外的数据中心下载到了这张图片。但是如果这张图片正好在你的电脑里就有，那是不是你可以直接通过网络传输给他？这样他能得到非常好的下载体验，而你也可以为这样的一个“善举”获得网络服务商的回报！而这一切都通过软件在后台自动处理，你甚至没有感觉就获得了服务商发放的收入。</p>
+<h1 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h1><p>首先我们需要分别注册这些服务商的账号，稍后完成部署后需要将设备绑定到自己的账号下。</p>
+<p>目前这样的软件提供商国外的有：</p>
 <ul>
 <li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER(这家现在注册就送5美金，可以先注册个账号占位先)</a></li>
 <li><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></li>
@@ -425,8 +552,16 @@
 <li><a href="https://www.tiptime.cn/index.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
 <li><a href="https://act.walk-live.com/acts/invite/v3/?inviteid=d96c8b9f">网心云</a></li>
 </ul>
-<h1 id="选择部署方式"><a href="#选择部署方式" class="headerlink" title="选择部署方式"></a>选择部署方式</h1><p>上面这几家都提供非常丰富的部署方式，比如 windows 电脑，苹果MACOS，安卓手机，平板，电视盒子以及 Docker。我们这里选择 Docker，因为 Docker 的稳定性通用性最好，而且可以同时部署多个以上的方案并行，做到利益最大化。下面提供的命令基本只要复制粘贴到运行docker 的主机即可，方便快捷！</p>
-<h2 id="TRAFFMONETIZER"><a href="#TRAFFMONETIZER" class="headerlink" title="TRAFFMONETIZER"></a><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></h2><p>将下面 –token 后的字符串替换为你的token，token 在 TRAFFMONETIZER 网站登录后的 Dashboard 中可以找到. 下面的命令根据自己运行 docker 的host 主机类型选择其中一种即可。</p>
+<h1 id="选择部署方式"><a href="#选择部署方式" class="headerlink" title="选择部署方式"></a>选择部署方式</h1><p>上面这几家都提供非常丰富的部署方式，比如 windows 电脑，苹果MACOS，安卓手机，平板，电视盒子，docker，群晖，树莓派3b，4b，x86 服务器等。如果你是一个电脑小白不会折腾安装也没关系，国内的几家服务商还提供家用路由器解决方案，你可以直接购买他们旗下的路由器硬件产品。这样的路由器除了负责家里的网络本职工作外，还可以通过预装的软件直接贡献带宽来换取利益。具体的部署方式可以参考</p>
+<ul>
+<li><a href="https://www.tiptime.cn/green-blog.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
+<li><a href="https://help.onethingcloud.com/7cb4">网心云</a></li>
+<li><a href="https://dashboard.peer2profit.app/download">PEER2Profit</a></li>
+<li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></li>
+</ul>
+<p>我们这里选择 Docker，因为 Docker 的稳定性通用性最好，而且可以同时部署多个以上的方案并行，做到利益最大化。下面提供的命令基本只要复制粘贴到运行docker 的主机即可，方便快捷！当然你也可以通过其他方式比如在 windows 上安装软件，安卓手机安装app，又或者在家里的群晖NAS 或者 openwrt 软路由上安装</p>
+<h1 id="收益"><a href="#收益" class="headerlink" title="收益"></a>收益</h1><p>有可能你会问这些项目的收益如何？老实说带宽的收益回报并不高，但是它的成本几乎为0。它利用的是你家里本来就被浪费的带宽。而基本都安装在那些 7x24 运行的设备上，比如 NAS 或者 openwrt 路由器。所以如果它可以提供额外的一些补贴又何乐而不为呢？部署完成后只需要让它安静的躺在那里，说不定那天你想起来时能补贴包烟钱呢！另外需要知道的是这类的服务商一般占用的是你的上行带宽，而我们日常需要使用的是下行带宽，所以对于宽带的使用几乎没有影响！</p>
+<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="TRAFFMONETIZER"><a href="#TRAFFMONETIZER" class="headerlink" title="TRAFFMONETIZER"></a><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></h2><p>将下面 –token 后的字符串替换为你的token，token 在 TRAFFMONETIZER 网站登录后的 Dashboard 中可以找到. 下面的命令根据自己运行 docker 的host 主机类型选择其中一种即可。</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"># 64 位 X86 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:latest start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 32 位 ARM 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm32v7 start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 64 位 ARM 设备，比如树莓派 4</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm64v8 start accept --token your_token_here</span><br></pre></td></tr></table></figure>
 
 <h2 id="PEER2Profit"><a href="#PEER2Profit" class="headerlink" title="PEER2Profit"></a><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></h2><p>将 P2P_EMAIL 后的邮件地址替换为自己注册时使用的地址, 无需引号</p>
@@ -453,131 +588,6 @@
         <tag>traffmonetizer</tag>
         <tag>peer2profit</tag>
         <tag>raspberry pi 4b</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Pod 与 Service</title>
-    <url>/cn/pod-and-service/</url>
-    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
-<span id="more"></span>
-
-<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
-
-<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
-<ul>
-<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
-<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
-
-<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
-
-<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>pod</tag>
-        <tag>service</tag>
-        <tag>iptables</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
-    <url>/cn/k8s-nfs-as-pv-pvc/</url>
-    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
-<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
-<span id="more"></span>
-
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
-<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
-
-<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
-<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
-<ul>
-<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
-<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
-<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
-<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
-<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
-<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
-</ul>
-<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
-<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
-<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
-<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
-</ul>
-<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
-<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
-<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
-<li>ports 中暴露服务端口</li>
-<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
-<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
-<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
-<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
-</ul>
-<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
-
-<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
-
-<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
-
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>raspberry pi</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>eve-ng-connect-external-network</title>
-    <url>/cn/eve-ng-connect-external-network/</url>
-    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
-<span id="more"></span>
-
-<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>vmware esxi</tag>
-        <tag>network</tag>
       </tags>
   </entry>
 </search>
