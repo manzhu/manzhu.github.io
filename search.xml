@@ -1,6 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Kubernetes 服务发布之 F5-BIGIP</title>
+    <url>/cn/cis/</url>
+    <content><![CDATA[<p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
+<span id="more"></span>
+
+<p>F5 通过官方发布的 CIS 来实现 BIG-IP 与 k8s 集群的整合. CIS 的全称是 F5 BIG-IP Container Ingress Services, 之前也被称为 BIGIP Controller.  它在 k8s 中作为一个 pod 的形式出现, 其作用主要负责监控 k8s 中 service/pod 的变化并将其发布到 BIGIP 上. CIS 以 NodePort 或者是 ClusterIP的方式在 BIG-IP 上创建 monitor, pool, virtual server 来发布服务. </p>
+<h2 id="NodePort"><a href="#NodePort" class="headerlink" title="NodePort"></a>NodePort</h2><p>通过 NodePort 发布应用时, BIG-IP 会将流量转发到 Node 上暴露的 NodePort 端口 (32771), 流量进入 Node 的 IP 10.1.10.100 与 10.1.10.200 后, 通过 kube-proxy 转发到对应的 pod 成员中(10.244.1.2 与 10.244.2.2). 所以在 NodePort 模式中, BIG-IP 中看到的 pool member IP 是 Node 的 IP 和端口.  </p>
+<p>如下图(转自官网):</p>
+<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/NodePort.png" class=""></div>
+
+<p>下面我们就来将一台 BIG-IP 整合到 k8s中:</p>
+<ul>
+<li><p>在 BIG-IP 上创建partition: k8s</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
+<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
+<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 CIS: cis_nodeport.yaml. 这里需要注意修改 <code>--bigip-url</code> 将其指向 BIG-IP management IP 地址. <code>--bigip-partition</code> 中指定 BIG-IP 上的 partition 名称, 在这里是 k8s. 另外需要注意的是 <code>--pool-member-type</code> 是 nodeport.</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">name: k8s-bigip-ctlr-deployment</span><br><span class="line">namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line"># DO NOT INCREASE REPLICA COUNT</span><br><span class="line">replicas: 1</span><br><span class="line">selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">    app: k8s-bigip-ctlr-deployment</span><br><span class="line">template:</span><br><span class="line">    metadata:</span><br><span class="line">    labels:</span><br><span class="line">        app: k8s-bigip-ctlr-deployment</span><br><span class="line">    spec:</span><br><span class="line">    # Name of the Service Account bound to a Cluster Role with the required</span><br><span class="line">    # permissions</span><br><span class="line">    containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">        image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">        env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: password</span><br><span class="line">        command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">        args: [</span><br><span class="line">            # See the k8s-bigip-ctlr documentation for information about</span><br><span class="line">            # all config options</span><br><span class="line">            # https://clouddocs.f5.com/containers/latest/</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=&lt;ip_address-or-hostname&gt;&quot;,</span><br><span class="line">            &quot;--bigip-partition=&lt;name_of_partition&gt;&quot;,</span><br><span class="line">            &quot;--pool-member-type=nodeport&quot;,</span><br><span class="line">            &quot;--insecure&quot;,</span><br><span class="line">            ]</span><br><span class="line">    serviceAccountName: bigip-ctlr</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 CIS 部署</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  cis_nodeport.yaml</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="ClusterIP"><a href="#ClusterIP" class="headerlink" title="ClusterIP"></a>ClusterIP</h2><p>通过 ClusterIP 发布应用时, BIGIP 将流量封装在 VXLAN 的tunnel 中并直接转发到 pod. 通过这种方式, 应用流量无需通过 kube-proxy 进行二次转发因此更加高效, 所以在 BIGIP 上我们看到 pool member 的地址是 pod 的 IP 地址. </p>
+<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/ClusterIP.png" class=""></div>
+
+<p>BIG-IP 可以直接得知 pod 中两个 container 实例的 IP 地址: 10.244.1.2 和 10.244.2.2, 同时流量也不用再通过 kube-proxy 进行转发. </p>
+<p>部署 Cluster IP 模式的 CIS 步骤如下:</p>
+<ul>
+<li><p>在 BIG-IP 上创建 partition: k8s</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
+<li><p>在 BIG-IP 上创建 VXLAN Tunnel:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create net self 172.16.1.28/16 &#123; allow-service all vlan Internal &#125; </span><br><span class="line">tmsh create net tunnels vxlan fl-vxlan port 8472 flooding-type none </span><br><span class="line">tmsh create net tunnels tunnel flannel_vxlan key 1 profile fl-vxlan local-address 172.16.1.28 </span><br><span class="line">tmsh create net self 10.244.100.3 address 10.244.100.3/16 allow-service none vlan flannel_vxlan </span><br></pre></td></tr></table></figure>
+<p>  其中 172.16.1.28 是 BIG-IP 在 K8S 集群中的 Node IP 地址, 用来和集群中的其他 Node 进行通讯; 10.244.100.3 则是 pod 的 ip 地址, 用来和 pod 里的container 进行通讯.</p>
+</li>
+<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
+<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
+<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
+<li><p>在 k8s 集群中, 将 BIG-IP 抽象为一个 Node 对象. 这里的 VtepMAC 地址 <code>00:50:56:86:b4:99</code> 是 BIG-IP 中 flannel_vxlan 的 MAC 地址: <code>tmsh show net tunnels tunnel flannel_vxlan all-properties</code> </p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Node</span><br><span class="line">metadata:</span><br><span class="line">name: bigip</span><br><span class="line">annotations:</span><br><span class="line">    # Provide the MAC address of the BIG-IP VXLAN tunnel</span><br><span class="line">    flannel.alpha.coreos.com/backend-data: &#x27;&#123;&quot;VtepMAC&quot;:&quot;00:50:56:86:b4:99&quot;&#125;&#x27;</span><br><span class="line">    flannel.alpha.coreos.com/backend-type: &quot;vxlan&quot;</span><br><span class="line">    flannel.alpha.coreos.com/kube-subnet-manager: &quot;true&quot;</span><br><span class="line">    # Provide the IP address you assigned as the BIG-IP VTEP</span><br><span class="line">    flannel.alpha.coreos.com/public-ip: 172.16.1.28</span><br><span class="line">spec:</span><br><span class="line"># Define the flannel subnet you want to assign to the BIG-IP device.</span><br><span class="line"># Be sure this subnet does not collide with any other Nodes&#x27; subnets.</span><br><span class="line">podCIDR: 10.244.100.0/24</span><br></pre></td></tr></table></figure></li>
+<li><p>ClusterIP 的 cis_clusterip.yaml:</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: k8s-bigip-ctlr-deployment</span><br><span class="line">  namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: k8s-bigip-ctlr</span><br><span class="line">      labels:</span><br><span class="line">        app: k8s-bigip-ctlr</span><br><span class="line">    spec:</span><br><span class="line">      serviceAccountName: k8s-bigip-ctlr</span><br><span class="line">      containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">          image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">          imagePullPolicy: IfNotPresent</span><br><span class="line">          env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: password</span><br><span class="line">          command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">          args: [</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=172.16.1.28&quot;,</span><br><span class="line">            &quot;--bigip-partition=k8s&quot;,</span><br><span class="line">            &quot;--namespace=default&quot;,</span><br><span class="line">            &quot;--pool-member-type=cluster&quot;,</span><br><span class="line">            &quot;--flannel-name=/Common/flannel_vxlan&quot;,</span><br><span class="line">            &quot;--insecure=true&quot;</span><br><span class="line">            ]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>应用 YAML 完成 CIS 部署  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  cis_clusterip.yaml</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>完成 CIS 的部署后, 我们就可以尝试在 k8s 集群中部署应用并查看 BIG-IP 上的发布情况. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  namespace: default</span><br><span class="line">  labels:</span><br><span class="line">    f5type: virtual-server</span><br><span class="line">data:</span><br><span class="line">  schema: &quot;f5schemadb://bigip-virtual-server_v0.1.7.json&quot;</span><br><span class="line">  data: |</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;virtualServer&quot;: &#123;</span><br><span class="line">        &quot;frontend&quot;: &#123;</span><br><span class="line">          &quot;balance&quot;: &quot;round-robin&quot;,</span><br><span class="line">          &quot;mode&quot;: &quot;http&quot;,</span><br><span class="line">          &quot;partition&quot;: &quot;k8s&quot;,</span><br><span class="line">          &quot;virtualAddress&quot;: &#123;</span><br><span class="line">            &quot;bindAddr&quot;: &quot;10.88.0.162&quot;,</span><br><span class="line">            &quot;port&quot;: 80</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;backend&quot;: &#123;</span><br><span class="line">          &quot;serviceName&quot;: &quot;f5-hello-world&quot;,</span><br><span class="line">          &quot;servicePort&quot;: 8080,</span><br><span class="line">          &quot;healthMonitors&quot;: [&#123;</span><br><span class="line">            &quot;interval&quot;: 5,</span><br><span class="line">            &quot;protocol&quot;: &quot;http&quot;,</span><br><span class="line">            &quot;send&quot;: &quot;HEAD / HTTP/1.0\r\n\r\n&quot;,</span><br><span class="line">            &quot;timeout&quot;: 16</span><br><span class="line">          &#125;]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  replicas: 100</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        run: f5-hello-world</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: f5-hello-world</span><br><span class="line">        image: &quot;f5devcentral/f5-hello-world:latest&quot;</span><br><span class="line">        imagePullPolicy: IfNotPresent</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 8080</span><br><span class="line">          protocol: TCP</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  labels:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">  - port: 8080</span><br><span class="line">    protocol: TCP</span><br><span class="line">    targetPort: 8080</span><br><span class="line">  type: ClusterIP</span><br><span class="line">  selector:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在 BIG-IP 上的 pool 以及 virtual server:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># tmsh list ltm pool /k8s/*</span><br><span class="line"></span><br><span class="line">ltm pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world &#123;</span><br><span class="line">    members &#123;</span><br><span class="line">        /k8s/10.244.2.172%0:webcache &#123;</span><br><span class="line">            address 10.244.2.172</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">        /k8s/10.244.2.173%0:webcache &#123;</span><br><span class="line">            address 10.244.2.173</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    monitor /k8s/cfgmap_default_f5-hello-world_f5-hello-world_0_http</span><br><span class="line">    partition k8s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># tmsh list ltm virtual /k8s/*</span><br><span class="line">ltm virtual /k8s/default_f5-hello-world &#123;</span><br><span class="line">    creation-time 2021-08-05:05:36:26</span><br><span class="line">    destination /k8s/10.88.0.162%0:http</span><br><span class="line">    ip-protocol tcp</span><br><span class="line">    last-modified-time 2021-08-05:05:36:26</span><br><span class="line">    mask 255.255.255.255</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    partition k8s</span><br><span class="line">    pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world</span><br><span class="line">    profiles &#123;</span><br><span class="line">        http &#123; &#125;</span><br><span class="line">        tcp &#123; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    source 0.0.0.0/0</span><br><span class="line">    source-address-translation &#123;</span><br><span class="line">        type automap</span><br><span class="line">    &#125;</span><br><span class="line">    translate-address enabled</span><br><span class="line">    translate-port enabled</span><br><span class="line">    vs-index 15</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到将 BIG-IP 做为 ingress 部署后, BIG-IP 可以自动探测到 k8s 集群中的应用发布变化并在 BIG-IP 上创建相应配置. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>cis</tag>
+        <tag>bigip controller</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>轻松创建 docker image</title>
     <url>/cn/build-docker-image/</url>
     <content><![CDATA[<p>在 Docker 技术出现之前, 搭建 lab 环境复现问题实在是件非常让人头疼的事情. 按照传统的方式搭建 LAB 环境非常麻烦. 比如你需要测试 nginx 或是 ftp, 我们需要安装 linux 服务器, 配置网络, 分配 IP, 更新软件源, 安装软件包, 调整配置文件… 而 Docker 的出现彻底解放了这些繁琐的工作! 通过一个 Dockerfile, 用户可以build 出符合自己需要的 docker image 并在几分钟内拉起一个服务.</p>
@@ -51,6 +125,22 @@
       </tags>
   </entry>
   <entry>
+    <title>eve-ng-connect-external-network</title>
+    <url>/cn/eve-ng-connect-external-network/</url>
+    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
+<span id="more"></span>
+
+<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>vmware esxi</tag>
+        <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>eve-ng 安装初始化</title>
     <url>/cn/eve-ng-install/</url>
     <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
@@ -81,22 +171,6 @@
       <tags>
         <tag>install</tag>
         <tag>router</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>eve-ng-connect-external-network</title>
-    <url>/cn/eve-ng-connect-external-network/</url>
-    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
-<span id="more"></span>
-
-<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>vmware esxi</tag>
-        <tag>network</tag>
       </tags>
   </entry>
   <entry>
@@ -140,70 +214,6 @@
       <tags>
         <tag>git</tag>
         <tag>gitlab runner</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
-    <url>/cn/k8s-nfs-as-pv-pvc/</url>
-    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
-<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
-<span id="more"></span>
-
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
-<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
-
-<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
-<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
-<ul>
-<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
-<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
-<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
-<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
-<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
-<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
-</ul>
-<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
-<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
-<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
-<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
-</ul>
-<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
-<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
-<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
-<li>ports 中暴露服务端口</li>
-<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
-<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
-<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
-<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
-</ul>
-<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
-
-<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
-
-<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
-
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>raspberry pi</tag>
       </tags>
   </entry>
   <entry>
@@ -298,6 +308,107 @@
       </tags>
   </entry>
   <entry>
+    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
+    <url>/cn/k8s-nfs-as-pv-pvc/</url>
+    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
+<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
+<span id="more"></span>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
+<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
+
+<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
+<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
+<ul>
+<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
+<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
+<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
+<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
+<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
+<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
+</ul>
+<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
+<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
+<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
+<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
+</ul>
+<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
+<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
+<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
+<li>ports 中暴露服务端口</li>
+<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
+<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
+<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
+<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
+</ul>
+<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
+
+<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>raspberry pi</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>mailu 搭建邮件服务器</title>
+    <url>/cn/mailu/</url>
+    <content><![CDATA[<p>mailu 是一款非常不错的邮件服务器解决方案。在 lab 中可以利用 docker 和 docker compose 快速的提供邮件服务。</p>
+<span id="more"></span>
+
+
+<ol>
+<li>为 linux 安装 docker 以及 docker compose </li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install docker docker-compose</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><p>切换到 root 并在根目录下建立 /mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /mailu;cd /mailu</span><br></pre></td></tr></table></figure></li>
+<li><p>在网站 <a href="https://setup.mailu.io/">https://setup.mailu.io/</a> 上选择稳定版，这里我们选择1.9 然后在网页中提供配置参数. 提供配置参数后网站会提供下载两个文件： docker-compose.yml 和 mailu.env</p>
+</li>
+<li><p>启动 mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd /mailu</span><br><span class="line">docker-compose -p mailu up -d</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>另外关闭 mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu down</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li><p>初始化管理员密码。注意替换下面的 PASSWORD</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu exec admin flask mailu admin admin m4n2.com PASSWORD</span><br></pre></td></tr></table></figure></li>
+<li><p>mailu 可以提供下列服务。普通邮件用户可以登录Web Mail 后再进行创建</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Webmail Portal: https://&lt;IP&gt;/Webmail</span><br><span class="line">管理员 portal: https://&lt;IP&gt;/admin</span><br><span class="line">用户名：admin</span><br><span class="line">密码： 参考步骤 5</span><br></pre></td></tr></table></figure></li>
+</ol>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>smtp</category>
+      </categories>
+      <tags>
+        <tag>email server</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>nmap</title>
     <url>/cn/nmap/</url>
     <content><![CDATA[<p>nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
@@ -340,43 +451,6 @@
       </tags>
   </entry>
   <entry>
-    <title>mailu 搭建邮件服务器</title>
-    <url>/cn/mailu/</url>
-    <content><![CDATA[<p>mailu 是一款非常不错的邮件服务器解决方案。在 lab 中可以利用 docker 和 docker compose 快速的提供邮件服务。</p>
-<span id="more"></span>
-
-
-<ol>
-<li>为 linux 安装 docker 以及 docker compose </li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install docker docker-compose</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li><p>切换到 root 并在根目录下建立 /mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /mailu;cd /mailu</span><br></pre></td></tr></table></figure></li>
-<li><p>在网站 <a href="https://setup.mailu.io/">https://setup.mailu.io/</a> 上选择稳定版，这里我们选择1.9 然后在网页中提供配置参数. 提供配置参数后网站会提供下载两个文件： docker-compose.yml 和 mailu.env</p>
-</li>
-<li><p>启动 mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd /mailu</span><br><span class="line">docker-compose -p mailu up -d</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>另外关闭 mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu down</span><br></pre></td></tr></table></figure>
-
-<ol start="5">
-<li><p>初始化管理员密码。注意替换下面的 PASSWORD</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu exec admin flask mailu admin admin m4n2.com PASSWORD</span><br></pre></td></tr></table></figure></li>
-<li><p>mailu 可以提供下列服务。普通邮件用户可以登录Web Mail 后再进行创建</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Webmail Portal: https://&lt;IP&gt;/Webmail</span><br><span class="line">管理员 portal: https://&lt;IP&gt;/admin</span><br><span class="line">用户名：admin</span><br><span class="line">密码： 参考步骤 5</span><br></pre></td></tr></table></figure></li>
-</ol>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>smtp</category>
-      </categories>
-      <tags>
-        <tag>email server</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>初试 oh-my-zsh</title>
     <url>/cn/ohmyzsh/</url>
     <content><![CDATA[<p>最近发现越来越多的同学都转向了zsh。其实 bash 用了好多年也并没有发现不顺手的地方。不过zsh貌似支持许多很酷的第三方插件，所以先记录下在 macos 中如何快速切换到 zsh 环境。</p>
@@ -411,154 +485,6 @@
       </categories>
       <tags>
         <tag>zsh</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Kubernetes 服务发布之 F5-BIGIP</title>
-    <url>/cn/cis/</url>
-    <content><![CDATA[<p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
-<span id="more"></span>
-
-<p>F5 通过官方发布的 CIS 来实现 BIG-IP 与 k8s 集群的整合. CIS 的全称是 F5 BIG-IP Container Ingress Services, 之前也被称为 BIGIP Controller.  它在 k8s 中作为一个 pod 的形式出现, 其作用主要负责监控 k8s 中 service/pod 的变化并将其发布到 BIGIP 上. CIS 以 NodePort 或者是 ClusterIP的方式在 BIG-IP 上创建 monitor, pool, virtual server 来发布服务. </p>
-<h2 id="NodePort"><a href="#NodePort" class="headerlink" title="NodePort"></a>NodePort</h2><p>通过 NodePort 发布应用时, BIG-IP 会将流量转发到 Node 上暴露的 NodePort 端口 (32771), 流量进入 Node 的 IP 10.1.10.100 与 10.1.10.200 后, 通过 kube-proxy 转发到对应的 pod 成员中(10.244.1.2 与 10.244.2.2). 所以在 NodePort 模式中, BIG-IP 中看到的 pool member IP 是 Node 的 IP 和端口.  </p>
-<p>如下图(转自官网):</p>
-<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/NodePort.png" class=""></div>
-
-<p>下面我们就来将一台 BIG-IP 整合到 k8s中:</p>
-<ul>
-<li><p>在 BIG-IP 上创建partition: k8s</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
-<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
-<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
-<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
-<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
-<li><p>安装 CIS: cis_nodeport.yaml. 这里需要注意修改 <code>--bigip-url</code> 将其指向 BIG-IP management IP 地址. <code>--bigip-partition</code> 中指定 BIG-IP 上的 partition 名称, 在这里是 k8s. 另外需要注意的是 <code>--pool-member-type</code> 是 nodeport.</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">name: k8s-bigip-ctlr-deployment</span><br><span class="line">namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line"># DO NOT INCREASE REPLICA COUNT</span><br><span class="line">replicas: 1</span><br><span class="line">selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">    app: k8s-bigip-ctlr-deployment</span><br><span class="line">template:</span><br><span class="line">    metadata:</span><br><span class="line">    labels:</span><br><span class="line">        app: k8s-bigip-ctlr-deployment</span><br><span class="line">    spec:</span><br><span class="line">    # Name of the Service Account bound to a Cluster Role with the required</span><br><span class="line">    # permissions</span><br><span class="line">    containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">        image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">        env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">            valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                # Replace with the name of the Secret containing your login</span><br><span class="line">                # credentials</span><br><span class="line">                name: bigip-login</span><br><span class="line">                key: password</span><br><span class="line">        command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">        args: [</span><br><span class="line">            # See the k8s-bigip-ctlr documentation for information about</span><br><span class="line">            # all config options</span><br><span class="line">            # https://clouddocs.f5.com/containers/latest/</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=&lt;ip_address-or-hostname&gt;&quot;,</span><br><span class="line">            &quot;--bigip-partition=&lt;name_of_partition&gt;&quot;,</span><br><span class="line">            &quot;--pool-member-type=nodeport&quot;,</span><br><span class="line">            &quot;--insecure&quot;,</span><br><span class="line">            ]</span><br><span class="line">    serviceAccountName: bigip-ctlr</span><br></pre></td></tr></table></figure></li>
-<li><p>应用 YAML 完成 CIS 部署</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  cis_nodeport.yaml</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h2 id="ClusterIP"><a href="#ClusterIP" class="headerlink" title="ClusterIP"></a>ClusterIP</h2><p>通过 ClusterIP 发布应用时, BIGIP 将流量封装在 VXLAN 的tunnel 中并直接转发到 pod. 通过这种方式, 应用流量无需通过 kube-proxy 进行二次转发因此更加高效, 所以在 BIGIP 上我们看到 pool member 的地址是 pod 的 IP 地址. </p>
-<div style="width:60%;margin:auto" align="center"><img src="/cn/cis/ClusterIP.png" class=""></div>
-
-<p>BIG-IP 可以直接得知 pod 中两个 container 实例的 IP 地址: 10.244.1.2 和 10.244.2.2, 同时流量也不用再通过 kube-proxy 进行转发. </p>
-<p>部署 Cluster IP 模式的 CIS 步骤如下:</p>
-<ul>
-<li><p>在 BIG-IP 上创建 partition: k8s</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create auth partition k8s</span><br></pre></td></tr></table></figure></li>
-<li><p>在 BIG-IP 上创建 VXLAN Tunnel:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">tmsh create net self 172.16.1.28/16 &#123; allow-service all vlan Internal &#125; </span><br><span class="line">tmsh create net tunnels vxlan fl-vxlan port 8472 flooding-type none </span><br><span class="line">tmsh create net tunnels tunnel flannel_vxlan key 1 profile fl-vxlan local-address 172.16.1.28 </span><br><span class="line">tmsh create net self 10.244.100.3 address 10.244.100.3/16 allow-service none vlan flannel_vxlan </span><br></pre></td></tr></table></figure>
-<p>  其中 172.16.1.28 是 BIG-IP 在 K8S 集群中的 Node IP 地址, 用来和集群中的其他 Node 进行通讯; 10.244.100.3 则是 pod 的 ip 地址, 用来和 pod 里的container 进行通讯.</p>
-</li>
-<li><p>在 k8s 中创建 BIG-IP 的登陆账号. 用户名: admin/密码: admin</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create secret generic bigip-login -n kube-system --from-literal=username=admin --from-literal=password=admin</span><br></pre></td></tr></table></figure></li>
-<li><p>创建安装 CIS 需要使用的 serviceaccount:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create serviceaccount bigip-ctlr -n kube-system</span><br></pre></td></tr></table></figure></li>
-<li><p>创建 ClusterRole 为 serviceaccount 分配权限: k8s_rbac_yaml</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># for use in k8s clusters only</span><br><span class="line">kind: ClusterRole</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;nodes&quot;, &quot;services&quot;, &quot;endpoints&quot;, &quot;namespaces&quot;, &quot;ingresses&quot;, &quot;pods&quot;, &quot;ingressclasses&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;, &quot;networking.k8s.io&quot;]</span><br><span class="line">resources: [&quot;configmaps&quot;, &quot;events&quot;, &quot;ingresses/status&quot;, &quot;services/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;cis.f5.com&quot;]</span><br><span class="line">resources: [&quot;virtualservers&quot;,&quot;virtualservers/status&quot;, &quot;tlsprofiles&quot;, &quot;transportservers&quot;, &quot;ingresslinks&quot;, &quot;externaldnss&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;fic.f5.com&quot;]</span><br><span class="line">resources: [&quot;f5ipams&quot;, &quot;f5ipams/status&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;, &quot;delete&quot;]</span><br><span class="line">- apiGroups: [&quot;apiextensions.k8s.io&quot;]</span><br><span class="line">resources: [&quot;customresourcedefinitions&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;update&quot;, &quot;create&quot;, &quot;patch&quot;]</span><br><span class="line">- apiGroups: [&quot;&quot;, &quot;extensions&quot;]</span><br><span class="line">resources: [&quot;secrets&quot;]</span><br><span class="line">verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">name: bigip-ctlr-clusterrole-binding</span><br><span class="line">namespace: kube-system</span><br><span class="line">roleRef:</span><br><span class="line">apiGroup: rbac.authorization.k8s.io</span><br><span class="line">kind: ClusterRole</span><br><span class="line">name: bigip-ctlr-clusterrole</span><br><span class="line">subjects:</span><br><span class="line">- apiGroup: &quot;&quot;</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">name: bigip-ctlr</span><br><span class="line">namespace: kube-system</span><br></pre></td></tr></table></figure></li>
-<li><p>应用 YAML 完成 Cluster Role 与 serviceaccounts 的绑定</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  k8s_rbac.yaml</span><br></pre></td></tr></table></figure></li>
-<li><p>在 k8s 集群中, 将 BIG-IP 抽象为一个 Node 对象. 这里的 VtepMAC 地址 <code>00:50:56:86:b4:99</code> 是 BIG-IP 中 flannel_vxlan 的 MAC 地址: <code>tmsh show net tunnels tunnel flannel_vxlan all-properties</code> </p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Node</span><br><span class="line">metadata:</span><br><span class="line">name: bigip</span><br><span class="line">annotations:</span><br><span class="line">    # Provide the MAC address of the BIG-IP VXLAN tunnel</span><br><span class="line">    flannel.alpha.coreos.com/backend-data: &#x27;&#123;&quot;VtepMAC&quot;:&quot;00:50:56:86:b4:99&quot;&#125;&#x27;</span><br><span class="line">    flannel.alpha.coreos.com/backend-type: &quot;vxlan&quot;</span><br><span class="line">    flannel.alpha.coreos.com/kube-subnet-manager: &quot;true&quot;</span><br><span class="line">    # Provide the IP address you assigned as the BIG-IP VTEP</span><br><span class="line">    flannel.alpha.coreos.com/public-ip: 172.16.1.28</span><br><span class="line">spec:</span><br><span class="line"># Define the flannel subnet you want to assign to the BIG-IP device.</span><br><span class="line"># Be sure this subnet does not collide with any other Nodes&#x27; subnets.</span><br><span class="line">podCIDR: 10.244.100.0/24</span><br></pre></td></tr></table></figure></li>
-<li><p>ClusterIP 的 cis_clusterip.yaml:</p>
-</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: k8s-bigip-ctlr-deployment</span><br><span class="line">  namespace: kube-system</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: k8s-bigip-ctlr</span><br><span class="line">      labels:</span><br><span class="line">        app: k8s-bigip-ctlr</span><br><span class="line">    spec:</span><br><span class="line">      serviceAccountName: k8s-bigip-ctlr</span><br><span class="line">      containers:</span><br><span class="line">        - name: k8s-bigip-ctlr</span><br><span class="line">          image: &quot;f5networks/k8s-bigip-ctlr:latest&quot;</span><br><span class="line">          imagePullPolicy: IfNotPresent</span><br><span class="line">          env:</span><br><span class="line">            - name: BIGIP_USERNAME</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: username</span><br><span class="line">            - name: BIGIP_PASSWORD</span><br><span class="line">              valueFrom:</span><br><span class="line">                secretKeyRef:</span><br><span class="line">                  name: bigip-login</span><br><span class="line">                  key: password</span><br><span class="line">          command: [&quot;/app/bin/k8s-bigip-ctlr&quot;]</span><br><span class="line">          args: [</span><br><span class="line">            &quot;--bigip-username=$(BIGIP_USERNAME)&quot;,</span><br><span class="line">            &quot;--bigip-password=$(BIGIP_PASSWORD)&quot;,</span><br><span class="line">            &quot;--bigip-url=172.16.1.28&quot;,</span><br><span class="line">            &quot;--bigip-partition=k8s&quot;,</span><br><span class="line">            &quot;--namespace=default&quot;,</span><br><span class="line">            &quot;--pool-member-type=cluster&quot;,</span><br><span class="line">            &quot;--flannel-name=/Common/flannel_vxlan&quot;,</span><br><span class="line">            &quot;--insecure=true&quot;</span><br><span class="line">            ]</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>应用 YAML 完成 CIS 部署  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f  cis_clusterip.yaml</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>完成 CIS 的部署后, 我们就可以尝试在 k8s 集群中部署应用并查看 BIG-IP 上的发布情况. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  namespace: default</span><br><span class="line">  labels:</span><br><span class="line">    f5type: virtual-server</span><br><span class="line">data:</span><br><span class="line">  schema: &quot;f5schemadb://bigip-virtual-server_v0.1.7.json&quot;</span><br><span class="line">  data: |</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;virtualServer&quot;: &#123;</span><br><span class="line">        &quot;frontend&quot;: &#123;</span><br><span class="line">          &quot;balance&quot;: &quot;round-robin&quot;,</span><br><span class="line">          &quot;mode&quot;: &quot;http&quot;,</span><br><span class="line">          &quot;partition&quot;: &quot;k8s&quot;,</span><br><span class="line">          &quot;virtualAddress&quot;: &#123;</span><br><span class="line">            &quot;bindAddr&quot;: &quot;10.88.0.162&quot;,</span><br><span class="line">            &quot;port&quot;: 80</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;backend&quot;: &#123;</span><br><span class="line">          &quot;serviceName&quot;: &quot;f5-hello-world&quot;,</span><br><span class="line">          &quot;servicePort&quot;: 8080,</span><br><span class="line">          &quot;healthMonitors&quot;: [&#123;</span><br><span class="line">            &quot;interval&quot;: 5,</span><br><span class="line">            &quot;protocol&quot;: &quot;http&quot;,</span><br><span class="line">            &quot;send&quot;: &quot;HEAD / HTTP/1.0\r\n\r\n&quot;,</span><br><span class="line">            &quot;timeout&quot;: 16</span><br><span class="line">          &#125;]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: extensions/v1beta1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  replicas: 100</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        run: f5-hello-world</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: f5-hello-world</span><br><span class="line">        image: &quot;f5devcentral/f5-hello-world:latest&quot;</span><br><span class="line">        imagePullPolicy: IfNotPresent</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 8080</span><br><span class="line">          protocol: TCP</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: f5-hello-world</span><br><span class="line">  labels:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">  - port: 8080</span><br><span class="line">    protocol: TCP</span><br><span class="line">    targetPort: 8080</span><br><span class="line">  type: ClusterIP</span><br><span class="line">  selector:</span><br><span class="line">    run: f5-hello-world</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>在 BIG-IP 上的 pool 以及 virtual server:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># tmsh list ltm pool /k8s/*</span><br><span class="line"></span><br><span class="line">ltm pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world &#123;</span><br><span class="line">    members &#123;</span><br><span class="line">        /k8s/10.244.2.172%0:webcache &#123;</span><br><span class="line">            address 10.244.2.172</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">        /k8s/10.244.2.173%0:webcache &#123;</span><br><span class="line">            address 10.244.2.173</span><br><span class="line">            session monitor-enabled</span><br><span class="line">            state up</span><br><span class="line">        &#125;</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    monitor /k8s/cfgmap_default_f5-hello-world_f5-hello-world_0_http</span><br><span class="line">    partition k8s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># tmsh list ltm virtual /k8s/*</span><br><span class="line">ltm virtual /k8s/default_f5-hello-world &#123;</span><br><span class="line">    creation-time 2021-08-05:05:36:26</span><br><span class="line">    destination /k8s/10.88.0.162%0:http</span><br><span class="line">    ip-protocol tcp</span><br><span class="line">    last-modified-time 2021-08-05:05:36:26</span><br><span class="line">    mask 255.255.255.255</span><br><span class="line">    metadata &#123;</span><br><span class="line">        user_agent &#123;</span><br><span class="line">            value k8s-bigip-ctlr-1.11.0-n1829-595947561</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    partition k8s</span><br><span class="line">    pool /k8s/cfgmap_default_f5-hello-world_f5-hello-world</span><br><span class="line">    profiles &#123;</span><br><span class="line">        http &#123; &#125;</span><br><span class="line">        tcp &#123; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    source 0.0.0.0/0</span><br><span class="line">    source-address-translation &#123;</span><br><span class="line">        type automap</span><br><span class="line">    &#125;</span><br><span class="line">    translate-address enabled</span><br><span class="line">    translate-port enabled</span><br><span class="line">    vs-index 15</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到将 BIG-IP 做为 ingress 部署后, BIG-IP 可以自动探测到 k8s 集群中的应用发布变化并在 BIG-IP 上创建相应配置. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>cis</tag>
-        <tag>bigip controller</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>树莓派踩坑指南之外挂硬盘</title>
-    <url>/cn/pi-hard-disk/</url>
-    <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
-<span id="more"></span>
-
-<p>解决方法：</p>
-<ol>
-<li>查看自己硬盘的信息. 其中 JMS578 就是系统识别的 USB 硬盘</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@ubuntu:~# lsusb</span><br><span class="line">Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br><span class="line">Bus 002 Device 002: ID 0080:a001 Unknown JMS578 based SATA bridge</span><br><span class="line">Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub</span><br><span class="line">Bus 001 Device 002: ID 2109:3431 VIA Labs, Inc. Hub</span><br><span class="line">Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>编辑 /boot/cmdline.txt. 这个文件根据系统安装方式的不同，有可能需要将 tf 卡直接挂载到电脑上才能进行读取编辑。</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">usb-storage.quirks=0080:a001:u console=serial0,115200 console=tty1 root=PARTUUID=dc77c2e2-02 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>完成后重启再查看问题是否解决。另外在 /etc/fstab 中挂载磁盘时建议加入 nofail 参数，这样在磁盘挂载出现问题时也不至于无法访问系统。</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2 /mnt ext4 defaults,nofail 0 0</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>raspberry pi</category>
-      </categories>
-      <tags>
-        <tag>硬盘</tag>
-        <tag>quirk</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Pod 与 Service</title>
-    <url>/cn/pod-and-service/</url>
-    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
-<span id="more"></span>
-
-<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
-
-<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
-
-<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
-
-<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
-<ul>
-<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
-<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
-
-<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
-
-<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
-
-<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>pod</tag>
-        <tag>service</tag>
-        <tag>iptables</tag>
       </tags>
   </entry>
   <entry>
@@ -633,6 +559,80 @@
         <tag>traffmonetizer</tag>
         <tag>peer2profit</tag>
         <tag>raspberry pi 4b</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>树莓派踩坑指南之外挂硬盘</title>
+    <url>/cn/pi-hard-disk/</url>
+    <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
+<span id="more"></span>
+
+<p>解决方法：</p>
+<ol>
+<li>查看自己硬盘的信息. 其中 JMS578 就是系统识别的 USB 硬盘</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@ubuntu:~# lsusb</span><br><span class="line">Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br><span class="line">Bus 002 Device 002: ID 0080:a001 Unknown JMS578 based SATA bridge</span><br><span class="line">Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub</span><br><span class="line">Bus 001 Device 002: ID 2109:3431 VIA Labs, Inc. Hub</span><br><span class="line">Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>编辑 /boot/cmdline.txt. 这个文件根据系统安装方式的不同，有可能需要将 tf 卡直接挂载到电脑上才能进行读取编辑。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">usb-storage.quirks=0080:a001:u console=serial0,115200 console=tty1 root=PARTUUID=dc77c2e2-02 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>完成后重启再查看问题是否解决。另外在 /etc/fstab 中挂载磁盘时建议加入 nofail 参数，这样在磁盘挂载出现问题时也不至于无法访问系统。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2 /mnt ext4 defaults,nofail 0 0</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>raspberry pi</category>
+      </categories>
+      <tags>
+        <tag>硬盘</tag>
+        <tag>quirk</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Pod 与 Service</title>
+    <url>/cn/pod-and-service/</url>
+    <content><![CDATA[<p>对于 Kubernetes (K8S) 的初学者来说最早接触到的一个概念可能就是 Pod 与 Service. Pod 简单来说就是一个或者一组 container 的集合. 但是在 K8S 的世界里, Pod 的一生可能非常短暂, 稍纵即逝. 而且 Pod 在每次启动时都会分配一个新的 IP 地址. 这样的话集群中互相依赖的 Pod 之间的访问就成了一个新的问题!!</p>
+<span id="more"></span>
+
+<p>K8S 为了解决这个问题引入了 Service 资源. Service 资源的本质是为一组 Pod 提供一个相对固定的 IP 地址. 无论 Pod 的 IP 地址如何变化, Service 的 IP 地址都不会改变. K8S 集群中每个 Node 上运行的 kube-proxy 组件负责转发 Service 与 Pod 之间的流量. kube-proxy 通过 iptables DNAT 或者 ipvs 规则将一个数据包的目的IP 从 Service 的 Cluster IP 修改为其背后的 Pod 的 IP 地址并进行转发. 比如在我们的 K8S 集群中有如下 pod:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod dvwa-6bcb999d58-hpg2j -o wide</span><br><span class="line">NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Running   0          29d   10.42.3.125   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Pod 的 IP 地址为 10.42.3.125, 并且运行在 node2 这个节点上. 这个 Pod 对应的 Service 为:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个 Service 的 CLUSTER-IP 为 10.43.18.128. 我们尝试访问下这个服务, 可以看到请求可以正常转发到实际通过服务的 Pod 上.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 13:22:12 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=reqgk2qhhcmf77m9l6fhokftb5; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>此时我们重启 node2 再对 Pod 进行观察. 由于 node2 无法提供服务, pod 漂移到了 node1 并且获得了新的 IP 10.42.2.140. 于此同时, K8S 删除了之前的 Pod dvwa-6bcb999d58-hpg2j. 与此同时 Service dvwa 的 IP 地址并没有改变, 访问此IP 仍然可以访问服务:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"></span><br><span class="line"># kubectl get service dvwa -o wide</span><br><span class="line">NAME   TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR</span><br><span class="line">dvwa   NodePort   10.43.18.128   &lt;none&gt;        80:30237/TCP   29d   app=dvwa</span><br><span class="line"></span><br><span class="line"># curl -I http://10.43.18.128/login.php</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Date: Fri, 03 Sep 2021 14:09:26 GMT</span><br><span class="line">Server: Apache/2.4.25 (Debian)</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Expires: Tue, 23 Jun 2009 12:00:00 GMT</span><br><span class="line">Cache-Control: no-cache, must-revalidate</span><br><span class="line">Pragma: no-cache</span><br><span class="line">Set-Cookie: PHPSESSID=gvhvtmasg3imm7oe4gqov30pm6; path=/</span><br><span class="line">Set-Cookie: security=low</span><br><span class="line">Content-Type: text/html;charset=utf-8</span><br></pre></td></tr></table></figure>
+
+<p>通过 iptables 我们还可以来查看下 kube-proxy 定义的数据包转发规则. 首先我们可以找到名为 KUBE-SERVICES 的 chain:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL PREROUTING | grep KUBE</span><br><span class="line">  39M 8368M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>在 KUBE-SERVICES 这条 chain 里, 我们可以找到与我们 Service DVWA 相关的两条规则:</p>
+<ul>
+<li>KUBE-MARK-MASQ 会对所有发往 Service 10.43.18.128 80 端口的流量进行标记. 所有被标记的数据包都会在 POSTROUTING 规则中 SNAT 源地址为 node 的 IP 地址.</li>
+<li>KUBE-SVC-DVCPEHURWBFNLMQF 会匹配到所有发往 10.43.18.128 这个 IP 地址 80 端口的流量.</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SERVICES | grep dvwa</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.42.0.0/16         10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-DVCPEHURWBFNLMQF  tcp  --  *      *       0.0.0.0/0            10.43.18.128         /* default/dvwa:http cluster IP */ tcp dpt:80</span><br></pre></td></tr></table></figure>
+
+<p>最终我们顺着 chain 可以找到 KUBE-SEP-7NAXZ4TOZS5VAIRS. 里面的DNAT 规则将所有流量都转发到 10.42.2.140 的80端口.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># iptables -t nat -nvL KUBE-SVC-DVCPEHURWBFNLMQF</span><br><span class="line">Chain KUBE-SVC-DVCPEHURWBFNLMQF (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SEP-7NAXZ4TOZS5VAIRS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line"># iptables -t nat -nvL KUBE-SEP-7NAXZ4TOZS5VAIRS</span><br><span class="line">Chain KUBE-SEP-7NAXZ4TOZS5VAIRS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.42.2.140          0.0.0.0/0            /* default/dvwa:http */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/dvwa:http */ tcp to:10.42.2.140:80</span><br></pre></td></tr></table></figure>
+
+<p>还记得 10.42.2.140 是谁的 IP 地址吗? </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># kubectl get pod -o wide</span><br><span class="line">NAME                    READY   STATUS        RESTARTS   AGE     IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">dvwa-6bcb999d58-7n88s   1/1     Running       0          2m58s   10.42.2.140   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">dvwa-6bcb999d58-hpg2j   1/1     Terminating   1          29d     10.42.3.131   node2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>所以通过上面的实验我们可以大致理解下一个数据包如何通过 iptables 的转发最终到达 Pod. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>pod</tag>
+        <tag>service</tag>
+        <tag>iptables</tag>
       </tags>
   </entry>
 </search>
