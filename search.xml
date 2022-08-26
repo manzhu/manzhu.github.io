@@ -1,39 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>eve-ng 安装初始化</title>
-    <url>/cn/eve-ng-install/</url>
-    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
-<span id="more"></span>
-
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
-<p>常用的资源如下:</p>
-<ul>
-<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
-<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
-</ul>
-<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
-<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
-
-<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
-<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
-
-<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
-
-<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>install</tag>
-        <tag>router</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>轻松创建 docker image</title>
     <url>/cn/build-docker-image/</url>
     <content><![CDATA[<p>在 Docker 技术出现之前, 搭建 lab 环境复现问题实在是件非常让人头疼的事情. 按照传统的方式搭建 LAB 环境非常麻烦. 比如你需要测试 nginx 或是 ftp, 我们需要安装 linux 服务器, 配置网络, 分配 IP, 更新软件源, 安装软件包, 调整配置文件… 而 Docker 的出现彻底解放了这些繁琐的工作! 通过一个 Dockerfile, 用户可以build 出符合自己需要的 docker image 并在几分钟内拉起一个服务.</p>
@@ -84,6 +51,55 @@
       </tags>
   </entry>
   <entry>
+    <title>eve-ng 安装初始化</title>
+    <url>/cn/eve-ng-install/</url>
+    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
+<span id="more"></span>
+
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
+<p>常用的资源如下:</p>
+<ul>
+<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
+<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
+</ul>
+<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
+<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
+
+<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
+<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
+
+<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>install</tag>
+        <tag>router</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>eve-ng-connect-external-network</title>
+    <url>/cn/eve-ng-connect-external-network/</url>
+    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
+<span id="more"></span>
+
+<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>vmware esxi</tag>
+        <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Ubuntu 18.04 安装 gitlab &amp; gitlab-runner</title>
     <url>/cn/gitlab-install/</url>
     <content><![CDATA[<p>本文初步介绍了在 Ubuntu 18.04 上安装 gitlab-ce 以及 gitlab runner 的方法. gitlab-ce 在收到代码的提交后可以触发gitlab runner 执行 CI 命令. gitlab runner 默认使用  <code>gitlab-runner</code> 的账号运行 CI 命令.</p>
@@ -124,6 +140,70 @@
       <tags>
         <tag>git</tag>
         <tag>gitlab runner</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
+    <url>/cn/k8s-nfs-as-pv-pvc/</url>
+    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
+<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
+<span id="more"></span>
+
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
+<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
+
+<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
+<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
+<ul>
+<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
+<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
+<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
+<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
+<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
+<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
+</ul>
+<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
+<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
+<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
+<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
+</ul>
+<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
+<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
+<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
+<li>ports 中暴露服务端口</li>
+<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
+<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
+<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
+<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
+</ul>
+<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
+
+<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>raspberry pi</tag>
       </tags>
   </entry>
   <entry>
@@ -218,123 +298,6 @@
       </tags>
   </entry>
   <entry>
-    <title>eve-ng-connect-external-network</title>
-    <url>/cn/eve-ng-connect-external-network/</url>
-    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
-<span id="more"></span>
-
-<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>vmware esxi</tag>
-        <tag>network</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>k8s 存储初始化之树莓派外接USB硬盘</title>
-    <url>/cn/k8s-nfs-as-pv-pvc/</url>
-    <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
-<p>这块硬盘是放置在 ORICO 的硬盘盒中, 硬盘盒自带外接电源而且支持 USB 3.0. 这里遇到一个小插曲, 由于搞错了节点的排序, 所以将硬盘插错了节点… 就这个低级错误白白浪费了几个小时的时间!!! 不过其间也发现了树莓派外接 USB 硬盘的一个坑 - 由于树莓派的 usb 口供电有限, 似乎不少人都遇到无自带电源的 usb 硬盘在树莓派里无法识别. 不过好在我这块是外置电源的硬盘盒, 所以把硬盘插入到正确的节点后树莓派可以正常识别硬盘设备. 所以接下来我们就来研究下如何将这块外接 USB 硬盘变为 k8s 的存储资源.</p>
-<span id="more"></span>
-
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>我们大致的计划是在 k8s 运行一个 nfs 服务器的 pod, 这个 pod 会让其固定在 node03 上并将外接硬盘 mount 的目录做为 NFS 存储资源发布到集群中供其他 pod 使用.</p>
-<p>这块硬盘已经被格式化为 ext4 并 mount 到 /mnt/data 这个目录. 这里就不再赘述关于如何格式化磁盘并挂载的细节, 以下是目前磁盘的挂载路径情况:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ blkid |grep sda</span><br><span class="line">/dev/sda: UUID=&quot;adc0b8fe-2b19-4954-99bc-069e7a3461c2&quot; TYPE=&quot;ext4&quot;</span><br><span class="line"></span><br><span class="line">$ cat /etc/fstab</span><br><span class="line">LABEL=writable  /        ext4   defaults        0 1</span><br><span class="line">LABEL=system-boot       /boot/firmware  vfat    defaults        0       1</span><br><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2       /mnt/data       ext4    defaults        0       1</span><br><span class="line"></span><br><span class="line">$ df -h | grep data</span><br><span class="line">/dev/sda        1.8T  6.0G  1.7T   1% /mnt/data</span><br></pre></td></tr></table></figure>
-
-<h2 id="准备-PV"><a href="#准备-PV" class="headerlink" title="准备 PV"></a>准备 PV</h2><p>在 k8s 中一个 pod 可以挂载外部存储的方法有很多, 但是比较好的做法是通过 PV 和 PVC 进行挂载. 对这两个概念不熟悉的同学先不用担心, 我们先来了解下为 k8s 中的 pod 提供存储空间需要考虑到的问题. 首先一个 pod 的生命周期非常短暂, 但是 pod 所产生的数据可能需要持久化保存. 比如我们后面会展现的一个例子是在 k8s 中运行一个 BT下载和网盘的服务. 我们希望这个 pod 停止运行后其下载的数据是可以在硬盘上的. 而且运行下载服务的 pod 可能会跑在 k8s 的任意一个节点上, 所以如何让其”活着的时候”有存储用, 而”消亡了后”之前下载的数据又得到了保存就是一个很实际的问题. PV 和 PVC 就能很好的满足我们的需求.</p>
-<p>PV (Persistent Volume) 是全局级别的预挂载空间. 它支持与很多类型存储的对接, 比如 NFS, ISCSI, CephFS 等等. 我们可以把 PV 理解为一个在 k8s 世界中提供存储资源的大仓库, 比如你可以有很多个不同类型的 PV; 而 pod 在启动时通过声明 PVC 来获取这些 PV 资源的分配. 我们来看一个实际的例子:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: storage</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: local-pv</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 1500Gi</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Retain</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/data/</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: hdd</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - enabled</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>为了后期管理的方便我们把这个NFS 服务相关的 pod, service, pv, pvc 都指派到同一个的 namespace - storage 中:</p>
-<ul>
-<li>这个 pv 资源我们取名为<code>local-pv</code>并分配 1500 GB 的空间</li>
-<li>这个 PV 资源的访问模式为<code>ReadWriteOnce</code>: 这个存储卷可以被一个节点以读写方式挂载</li>
-<li>persistentVolumeReclaimPolicy 里指定的是回收策略, 这里我们使用 Retain 表示手动回收, 也就是说如果 pod 消亡, 其上的数据得以保留.</li>
-<li>storageClassName 指定这个 PV 在 local-storage 这个逻辑组中, 主要是为了后面 PVC 可以直接引用这个 PV</li>
-<li>local: 节点上挂载的本地存储设备. 路径是我们移动硬盘挂载在 node03 上的 /mnt/data</li>
-<li>nodeAffinity 指定这个 PV 所在的节点. 因为我们的移动硬盘连接在node03上, 所以这个 PV 资源会绑定在 node03. 我们之前为 node03 打上了 <code>hdd=enabled</code> 的 label</li>
-</ul>
-<p>总结一下: 我们在 node03 创建了一个 pv. 其使用本地目录空间 /mnt/data (实际是外接usb硬盘盒) 做为存储空间; 分配大小为 1500 GB 并且其上的数据只能由管理员手动删除(Retain)!</p>
-<h2 id="准备-PVC"><a href="#准备-PVC" class="headerlink" title="准备 PVC"></a>准备 PVC</h2><p>PVC (Persistent Volume Claim) 是对于存储空间的请求声明. 不过这里需要注意的是 PVC 属于名称空间级别. 也就是说 PVC 必须和调用它的 pod 处于同一个 namespace 中. 我们来看下 PVC 的配置:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: PersistentVolumeClaim</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: local-claim</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  resources:</span><br><span class="line">    requests:</span><br><span class="line">      storage: 1500Gi</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>这个 pvc 我们取名为<code>local-claim</code> 并将上面 PV 的所有空间 1500 GB 分配给它.</li>
-<li>accessModes 使用和 pv 一致的 <code>ReadWriteOnce</code></li>
-<li>storageClassName 中指定与上述 pv 相同的 <code>local-storage</code> 实现与 pv 绑定.</li>
-</ul>
-<h2 id="准备-nfs-pod"><a href="#准备-nfs-pod" class="headerlink" title="准备 nfs pod"></a>准备 nfs pod</h2><p>我们只需要完成 nfs 服务 pod 资源的准备并在其调用上面的 pvc 即可. nfs 服务器的 deployment 如下:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">  labels:</span><br><span class="line">    app: nfs-server</span><br><span class="line">spec:</span><br><span class="line">  replicas: 1</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nfs-server</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nfs-server</span><br><span class="line">        name: nfs-server</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nfs-server</span><br><span class="line">        image: itsthenetwork/nfs-server-alpine:latest-arm</span><br><span class="line">        env:</span><br><span class="line">          - name: SHARED_DIRECTORY</span><br><span class="line">            value: /exports</span><br><span class="line">        ports:</span><br><span class="line">          - name: nfs</span><br><span class="line">            containerPort: 2049</span><br><span class="line">          - name: mountd</span><br><span class="line">            containerPort: 20048</span><br><span class="line">          - name: rpcbind</span><br><span class="line">            containerPort: 111</span><br><span class="line">        securityContext:</span><br><span class="line">          privileged: true</span><br><span class="line">        volumeMounts:</span><br><span class="line">          - mountPath: /exports</span><br><span class="line">            name: mypvc</span><br><span class="line">      volumes:</span><br><span class="line">        - name: mypvc</span><br><span class="line">          persistentVolumeClaim:</span><br><span class="line">            claimName: local-claim</span><br><span class="line">      nodeSelector:</span><br><span class="line">        hdd: enabled</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>我们 nfs 应用 pod 名字为nfs-server 并打上 <code>app: nfs-server</code> 的标签. 它运行在和 pv, pvc 相同的 namespace 中</li>
-<li>将带有<code>app: nfs-server</code>标签的 pod 绑定到这个 deployment 资源里</li>
-<li>env 中传入环境变量指定 nfs 服务器将存储挂载到自己的 /exports 目录下</li>
-<li>ports 中暴露服务端口</li>
-<li>securityContext 比较重要. 这个docker image 需要这样设置才能在 k8s 中工作</li>
-<li>volumeMounts: 将 pod 内的 /exports 目录取名 mypvc 做为挂载点</li>
-<li>volumes: 把 local-claim 这个 pvc 挂载到 <code>mypvc</code> 这个 pod 中的挂载点上</li>
-<li>nodeSelector再次指定这个pod 需要运行在 node03 上</li>
-</ul>
-<h2 id="Service-准备"><a href="#Service-准备" class="headerlink" title="Service 准备"></a>Service 准备</h2><p>最后我们准备 service 资源将这个 nfs 应用发布出去. 我们为这个 service 分配了固定 IP: 10.96.0.100. 同时这个service 资源绑定到有<code>app: nfs-server</code>的pod 上. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kind: Service</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: nfs-server</span><br><span class="line">  namespace: storage</span><br><span class="line">spec:</span><br><span class="line">  ports:</span><br><span class="line">    - name: nfs</span><br><span class="line">      port: 2049</span><br><span class="line">    - name: mountd</span><br><span class="line">      port: 20048</span><br><span class="line">    - name: rpcbind</span><br><span class="line">      port: 111</span><br><span class="line">  clusterIP: 10.96.0.100 this.</span><br><span class="line">  selector:</span><br><span class="line">    app: nfs-server</span><br></pre></td></tr></table></figure>
-
-<p>这样我们就完成了这个 nfs pod 的配置. 如果要在 k8s 上运行可以将上述配置放入同一个 yaml 文件中然后运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl apply -f nfs.yml</span><br></pre></td></tr></table></figure>
-
-<p>另外请确保所有的 k8s 节点上都安装有 nfs 的client 程序. 因为后续的 pod 其实都是通过 mount 来调用这个 nfs 共享出的存储资源. 安装 nfs 客户端可以在各台node 主机上运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt update &amp;&amp;&amp; sudo apt-get install nfs-common -y</span><br></pre></td></tr></table></figure>
-
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>为 k8s 添加了存储资源后, 我们后续就可以方便的为 pod 分配空间并且数据会存放在 nfs 上进行持久存储. 我们下一步就是搭建一个家用的文件下载服务器以及私有云盘. 敬请期待把!</p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>raspberry pi</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>mailu 搭建邮件服务器</title>
-    <url>/cn/mailu/</url>
-    <content><![CDATA[<p>mailu 是一款非常不错的邮件服务器解决方案。在 lab 中可以利用 docker 和 docker compose 快速的提供邮件服务。</p>
-<span id="more"></span>
-
-
-<ol>
-<li>为 linux 安装 docker 以及 docker compose </li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install docker docker-compose</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li><p>切换到 root 并在根目录下建立 /mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /mailu;cd /mailu</span><br></pre></td></tr></table></figure></li>
-<li><p>在网站 <a href="https://setup.mailu.io/">https://setup.mailu.io/</a> 上选择稳定版，这里我们选择1.9 然后在网页中提供配置参数. 提供配置参数后网站会提供下载两个文件： docker-compose.yml 和 mailu.env</p>
-</li>
-<li><p>启动 mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd /mailu</span><br><span class="line">docker-compose -p mailu up -d</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>另外关闭 mailu</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu down</span><br></pre></td></tr></table></figure>
-
-<ol start="5">
-<li><p>初始化管理员密码。注意替换下面的 PASSWORD</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu exec admin flask mailu admin admin m4n2.com PASSWORD</span><br></pre></td></tr></table></figure></li>
-<li><p>mailu 可以提供下列服务。普通邮件用户可以登录Web Mail 后再进行创建</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Webmail Portal: https://&lt;IP&gt;/Webmail</span><br><span class="line">管理员 portal: https://&lt;IP&gt;/admin</span><br><span class="line">用户名：admin</span><br><span class="line">密码： 参考步骤 5</span><br></pre></td></tr></table></figure></li>
-</ol>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>smtp</category>
-      </categories>
-      <tags>
-        <tag>email server</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>nmap</title>
     <url>/cn/nmap/</url>
     <content><![CDATA[<p>nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
@@ -374,6 +337,43 @@
       <tags>
         <tag>nmap</tag>
         <tag>scanner</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>mailu 搭建邮件服务器</title>
+    <url>/cn/mailu/</url>
+    <content><![CDATA[<p>mailu 是一款非常不错的邮件服务器解决方案。在 lab 中可以利用 docker 和 docker compose 快速的提供邮件服务。</p>
+<span id="more"></span>
+
+
+<ol>
+<li>为 linux 安装 docker 以及 docker compose </li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install docker docker-compose</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li><p>切换到 root 并在根目录下建立 /mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /mailu;cd /mailu</span><br></pre></td></tr></table></figure></li>
+<li><p>在网站 <a href="https://setup.mailu.io/">https://setup.mailu.io/</a> 上选择稳定版，这里我们选择1.9 然后在网页中提供配置参数. 提供配置参数后网站会提供下载两个文件： docker-compose.yml 和 mailu.env</p>
+</li>
+<li><p>启动 mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd /mailu</span><br><span class="line">docker-compose -p mailu up -d</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>另外关闭 mailu</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu down</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li><p>初始化管理员密码。注意替换下面的 PASSWORD</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker-compose -p mailu exec admin flask mailu admin admin m4n2.com PASSWORD</span><br></pre></td></tr></table></figure></li>
+<li><p>mailu 可以提供下列服务。普通邮件用户可以登录Web Mail 后再进行创建</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Webmail Portal: https://&lt;IP&gt;/Webmail</span><br><span class="line">管理员 portal: https://&lt;IP&gt;/admin</span><br><span class="line">用户名：admin</span><br><span class="line">密码： 参考步骤 5</span><br></pre></td></tr></table></figure></li>
+</ol>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>smtp</category>
+      </categories>
+      <tags>
+        <tag>email server</tag>
       </tags>
   </entry>
   <entry>
@@ -488,80 +488,6 @@
       </tags>
   </entry>
   <entry>
-    <title>闲置宽带躺赚钱-还要什么自行车?!</title>
-    <url>/cn/pi-docker-earn-money/</url>
-    <content><![CDATA[<p>闲置宽带也能赚钱？没听错吧？这年头谁家还没有条宽带？没错！我们今天要说的就是如何充分利用你家里的宽带为你带来收益。</p>
-<span id="more"></span>
-
-<p>相信大家感受到近几年来家用宽带的资费越来越低，电信联通移动的良性竞争使得消费者得到了切实的实惠；但是与此同时商用的网络流量需求却出现了井喷式的需求。各种视频网站，网盘云盘你方唱罢我登场，好不热闹。但是问题来了，这些服务供应商如何能把资源又快又好地传输给分布在天南地北的用户们呢？于是网络服务商们不得不在各地建立起大量的数据中心，这样北京的用户可以从北京的数据中心直接获取资源，海南的用户也可以从靠近海南的数据中心直接获取资源。这个方案听上去非常合理但是其背后的运营成本非常之高！</p>
-<p>这时候就有大聪明们想到了一个方法：一边是被闲置的家用宽带，而另一边是价格昂贵的数据中心。我们是不是可以利用这些家用宽带为商业网络服务呢？</p>
-<p>比如你的邻居今天需要下载一张图片。按照传统的方法他从家里的网络连接到几十，甚至数百公里外的数据中心下载到了这张图片。但是如果这张图片正好在你的电脑里就有，那是不是你可以直接通过网络传输给他？这样他能得到非常好的下载体验，而你也可以为这样的一个“善举”获得网络服务商的回报！而这一切都通过软件在后台自动处理，你甚至没有感觉就获得了服务商发放的收入。</p>
-<h1 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h1><p>首先我们需要分别注册这些服务商的账号，稍后完成部署后需要将设备绑定到自己的账号下。</p>
-<p>目前这样的软件提供商国外的有：</p>
-<p>国内的有：</p>
-<ul>
-<li><a href="https://www.tiptime.cn/index.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
-<li><a href="https://act.walk-live.com/acts/invite/v3/?inviteid=d96c8b9f">网心云</a></li>
-<li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a> (这家现在注册就送5美金，可以先注册个账号占位先)</li>
-<li><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></li>
-</ul>
-<h1 id="选择部署方式"><a href="#选择部署方式" class="headerlink" title="选择部署方式"></a>选择部署方式</h1><p>上面这几家都提供非常丰富的部署方式，比如 windows 电脑，苹果MACOS，安卓手机，平板，电视盒子，docker，群晖，树莓派3b，4b，x86 服务器等。如果你是一个电脑小白不会折腾安装也没关系，国内的几家服务商还提供家用路由器解决方案，你可以直接购买他们旗下的路由器硬件产品。这样的路由器除了负责家里的网络本职工作外，还可以通过预装的软件直接贡献带宽来换取利益。具体的部署方式可以参考</p>
-<ul>
-<li><a href="https://www.tiptime.cn/green-blog.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
-<li><a href="https://help.onethingcloud.com/7cb4">网心云</a></li>
-<li><a href="https://dashboard.peer2profit.app/download">PEER2Profit</a></li>
-<li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></li>
-</ul>
-<p>我们这里选择 Docker，因为 Docker 的稳定性通用性最好，而且可以同时部署多个以上的方案并行，做到利益最大化。下面提供的命令基本只要复制粘贴到运行docker 的主机即可，方便快捷！当然你也可以通过其他方式比如在 windows 上安装软件，安卓手机安装app，又或者在家里的群晖NAS 或者 openwrt 软路由上安装</p>
-<h1 id="收益"><a href="#收益" class="headerlink" title="收益"></a>收益</h1><p>有可能你会问这些项目的收益如何？老实说带宽的收益回报并不高，但是它的成本几乎为0。它利用的是你家里本来就被浪费的带宽。而基本都安装在那些 7x24 运行的设备上，比如 NAS 或者 openwrt 路由器。所以如果它可以提供额外的一些补贴又何乐而不为呢？部署完成后只需要让它安静的躺在那里，说不定那天你想起来时能补贴包烟钱呢！另外需要知道的是这类的服务商一般占用的是你的上行带宽，而我们日常需要使用的是下行带宽，所以对于宽带的使用几乎没有影响！</p>
-<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="Docker-安装"><a href="#Docker-安装" class="headerlink" title="Docker 安装"></a>Docker 安装</h2><p>我使用的系统是 ubuntu 22.04。 Docker 的安装非常简单</p>
-<ol>
-<li>更新系统: <code>sudo apt update &amp;&amp; sudo apt dist-upgrade &amp;&amp; apt-get install -y apt-transport-https</code></li>
-<li>安装 docker: <code>curl -sSL get.docker.com | sudo sh</code></li>
-<li>配置Docker开机启动: <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code></li>
-<li>重启: <code>reboot</code></li>
-</ol>
-<h2 id="TRAFFMONETIZER"><a href="#TRAFFMONETIZER" class="headerlink" title="TRAFFMONETIZER"></a><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></h2><p>将下面 –token 后的字符串替换为你的token，token 在 TRAFFMONETIZER 网站登录后的 Dashboard 中可以找到. 下面的命令根据自己运行 docker 的host 主机类型选择其中一种即可。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"># 64 位 X86 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:latest start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 32 位 ARM 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm32v7 start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 64 位 ARM 设备，比如树莓派 4</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm64v8 start accept --token your_token_here</span><br></pre></td></tr></table></figure>
-
-<h2 id="PEER2Profit"><a href="#PEER2Profit" class="headerlink" title="PEER2Profit"></a><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></h2><p>将 P2P_EMAIL 后的邮件地址替换为自己注册时使用的地址, 无需引号</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d --restart always -e P2P_EMAIL=yourmail@youmail.com --name peer2profit peer2profit/peer2profit_linux:latest</span><br></pre></td></tr></table></figure>
-
-<h2 id="甜糖"><a href="#甜糖" class="headerlink" title="甜糖"></a><a href="https://www.tiptime.cn/index.html">甜糖</a></h2><p>/mnt/tiantang 是 host 主机上的本地目录，用来存放其缓存文件。如果需要可以自行修改</p>
-<p>/mnt/data/ttnode 是 docker 镜像中的目录，无需修改</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d -v /mnt/tiantang:/mnt/data/ttnode -v /var/run/docker.sock:/var/run/docker.sock --name ttnode --hostname ttnode --net=host --restart=always --memory=2g tiptime/ttnode:latest</span><br></pre></td></tr></table></figure>
-
-<h2 id="网心云"><a href="#网心云" class="headerlink" title="网心云"></a><a href="https://act.walk-live.com/acts/invite/v3/?inviteid=d96c8b9f">网心云</a></h2><p>/mnt/wxedge_storage 是 host 主机上的本地目录，用来存放其缓存文件。如果需要可以自行修改</p>
-<p>/storage:rw 是 docker 镜像中的目录，无需修改</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name=wxedge --restart=always --privileged --net=host --tmpfs /run --tmpfs /tmp -v /mnt/wxedge_storage:/storage:rw -d registry.hub.docker.com/onething1/wxedge</span><br></pre></td></tr></table></figure>
-
-<p>上述几条命令可以非常快速地架设起节点，几分钟你家的宽带就开始为你赚钱啦！</p>
-<h1 id="网络环境"><a href="#网络环境" class="headerlink" title="网络环境"></a>网络环境</h1><p>另外需要提醒的是家中的宽带一般都需要打开路由器上的 UPNP 功能，这样才能让网络流量可以穿越路由器到达这些docker 节点中。具体打开的方法根据路由器型号，品牌的不同也多种多样。大家可以自行在网上查找</p>
-<p>并且如果需要在一台设备上跑多个 docker 实例，还需将 docker 的网络配置为 macvlan 的模式：</p>
-<p>将网卡设置为混杂模式：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">crontab -e</span><br><span class="line"></span><br><span class="line">@reboot /usr/sbin/ifconfig eth0 promisc</span><br></pre></td></tr></table></figure>
-
-<p>raspberry 的话安装包: </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install linux-modules-extra-raspi</span><br></pre></td></tr></table></figure>
-
-<p>创建 macvlan 网络，192.168.1.0/24 可以理解为家里的网络网段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker network create -d macvlan --subnet=192.168.1.0/24 --gateway=192.168.1.254 -o parent=eth0 -o macvlan_mode=bridge macnet</span><br></pre></td></tr></table></figure>
-
-<p>在 macvlan 网络中创建镜像:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name=wxedge --restart=always --privileged=true --net=macnet --ip=192.168.1.100 --tmpfs /run --tmpfs /tmp -v /mnt/wxedge_storage:/storage:rw -d registry.hub.docker.com/onething1/wxedge</span><br><span class="line">docker run -d -v /mnt/tiantang:/mnt/data/ttnode -v /var/run/docker.sock:/var/run/docker.sock --name ttnode --hostname ttnode --net=macnet --ip=192.168.1.101 --privileged=true --restart=always tiptime/ttnode:latest</span><br><span class="line">docker run -d --restart always --net=macnet --ip=192.168.1.102 --privileged=true --name tm traffmonetizer/cli:arm64v8 start accept --token xxx</span><br><span class="line">docker run -d --restart always --net=macnet --ip=192.168.1.103 --privileged=true -e P2P_EMAIL=xxx --name peer2profit peer2profit/peer2profit_linux:latest</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>docker</category>
-        <category>cdn</category>
-      </categories>
-      <tags>
-        <tag>网心云</tag>
-        <tag>甜糖</tag>
-        <tag>traffmonetizer</tag>
-        <tag>peer2profit</tag>
-        <tag>raspberry pi 4b</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>树莓派踩坑指南之外挂硬盘</title>
     <url>/cn/pi-hard-disk/</url>
     <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
@@ -633,6 +559,80 @@
         <tag>pod</tag>
         <tag>service</tag>
         <tag>iptables</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>闲置宽带躺赚钱-还要什么自行车?!</title>
+    <url>/cn/pi-docker-earn-money/</url>
+    <content><![CDATA[<p>闲置宽带也能赚钱？没听错吧？这年头谁家还没有条宽带？没错！我们今天要说的就是如何充分利用你家里的宽带为你带来收益。</p>
+<span id="more"></span>
+
+<p>相信大家感受到近几年来家用宽带的资费越来越低，电信联通移动的良性竞争使得消费者得到了切实的实惠；但是与此同时商用的网络流量需求却出现了井喷式的需求。各种视频网站，网盘云盘你方唱罢我登场，好不热闹。但是问题来了，这些服务供应商如何能把资源又快又好地传输给分布在天南地北的用户们呢？于是网络服务商们不得不在各地建立起大量的数据中心，这样北京的用户可以从北京的数据中心直接获取资源，海南的用户也可以从靠近海南的数据中心直接获取资源。这个方案听上去非常合理但是其背后的运营成本非常之高！</p>
+<p>这时候就有大聪明们想到了一个方法：一边是被闲置的家用宽带，而另一边是价格昂贵的数据中心。我们是不是可以利用这些家用宽带为商业网络服务呢？</p>
+<p>比如你的邻居今天需要下载一张图片。按照传统的方法他从家里的网络连接到几十，甚至数百公里外的数据中心下载到了这张图片。但是如果这张图片正好在你的电脑里就有，那是不是你可以直接通过网络传输给他？这样他能得到非常好的下载体验，而你也可以为这样的一个“善举”获得网络服务商的回报！而这一切都通过软件在后台自动处理，你甚至没有感觉就获得了服务商发放的收入。</p>
+<h1 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h1><p>首先我们需要分别注册这些服务商的账号，稍后完成部署后需要将设备绑定到自己的账号下。</p>
+<p>目前这样的软件提供商国外的有：</p>
+<p>国内的有：</p>
+<ul>
+<li><a href="https://www.tiptime.cn/index.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
+<li><a href="https://act.walk-live.com/acts/invite/v3/?inviteid=d96c8b9f">网心云</a></li>
+<li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a> (这家现在注册就送5美金，可以先注册个账号占位先)</li>
+<li><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></li>
+</ul>
+<h1 id="选择部署方式"><a href="#选择部署方式" class="headerlink" title="选择部署方式"></a>选择部署方式</h1><p>上面这几家都提供非常丰富的部署方式，比如 windows 电脑，苹果MACOS，安卓手机，平板，电视盒子，docker，群晖，树莓派3b，4b，x86 服务器等。如果你是一个电脑小白不会折腾安装也没关系，国内的几家服务商还提供家用路由器解决方案，你可以直接购买他们旗下的路由器硬件产品。这样的路由器除了负责家里的网络本职工作外，还可以通过预装的软件直接贡献带宽来换取利益。具体的部署方式可以参考</p>
+<ul>
+<li><a href="https://www.tiptime.cn/green-blog.html">甜糖</a>（注册时可以填写邀请码：257734，获得15张心愿加成卡可以获得额外10%的回报）</li>
+<li><a href="https://help.onethingcloud.com/7cb4">网心云</a></li>
+<li><a href="https://dashboard.peer2profit.app/download">PEER2Profit</a></li>
+<li><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></li>
+</ul>
+<p>我们这里选择 Docker，因为 Docker 的稳定性通用性最好，而且可以同时部署多个以上的方案并行，做到利益最大化。下面提供的命令基本只要复制粘贴到运行docker 的主机即可，方便快捷！当然你也可以通过其他方式比如在 windows 上安装软件，安卓手机安装app，又或者在家里的群晖NAS 或者 openwrt 软路由上安装</p>
+<h1 id="收益"><a href="#收益" class="headerlink" title="收益"></a>收益</h1><p>有可能你会问这些项目的收益如何？老实说带宽的收益回报并不高，但是它的成本几乎为0。它利用的是你家里本来就被浪费的带宽。而基本都安装在那些 7x24 运行的设备上，比如 NAS 或者 openwrt 路由器。所以如果它可以提供额外的一些补贴又何乐而不为呢？部署完成后只需要让它安静的躺在那里，说不定那天你想起来时能补贴包烟钱呢！另外需要知道的是这类的服务商一般占用的是你的上行带宽，而我们日常需要使用的是下行带宽，所以对于宽带的使用几乎没有影响！</p>
+<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><h2 id="Docker-安装"><a href="#Docker-安装" class="headerlink" title="Docker 安装"></a>Docker 安装</h2><p>我使用的系统是 ubuntu 22.04。 Docker 的安装非常简单</p>
+<ol>
+<li>更新系统: <code>sudo apt update &amp;&amp; sudo apt dist-upgrade &amp;&amp; apt-get install -y apt-transport-https</code></li>
+<li>安装 docker: <code>curl -sSL get.docker.com | sudo sh</code></li>
+<li>配置Docker开机启动: <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code></li>
+<li>重启: <code>reboot</code></li>
+</ol>
+<h2 id="TRAFFMONETIZER"><a href="#TRAFFMONETIZER" class="headerlink" title="TRAFFMONETIZER"></a><a href="https://traffmonetizer.com/?aff=408363">TRAFFMONETIZER</a></h2><p>将下面 –token 后的字符串替换为你的token，token 在 TRAFFMONETIZER 网站登录后的 Dashboard 中可以找到. 下面的命令根据自己运行 docker 的host 主机类型选择其中一种即可。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"># 64 位 X86 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:latest start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 32 位 ARM 设备</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm32v7 start accept --token your_token_here</span><br><span class="line"></span><br><span class="line"># 64 位 ARM 设备，比如树莓派 4</span><br><span class="line">docker run -d --name tm traffmonetizer/cli:arm64v8 start accept --token your_token_here</span><br></pre></td></tr></table></figure>
+
+<h2 id="PEER2Profit"><a href="#PEER2Profit" class="headerlink" title="PEER2Profit"></a><a href="https://p2pr.me/166012971162f391aff3987">PEER2Profit</a></h2><p>将 P2P_EMAIL 后的邮件地址替换为自己注册时使用的地址, 无需引号</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d --restart always -e P2P_EMAIL=yourmail@youmail.com --name peer2profit peer2profit/peer2profit_linux:latest</span><br></pre></td></tr></table></figure>
+
+<h2 id="甜糖"><a href="#甜糖" class="headerlink" title="甜糖"></a><a href="https://www.tiptime.cn/index.html">甜糖</a></h2><p>/mnt/tiantang 是 host 主机上的本地目录，用来存放其缓存文件。如果需要可以自行修改</p>
+<p>/mnt/data/ttnode 是 docker 镜像中的目录，无需修改</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d -v /mnt/tiantang:/mnt/data/ttnode -v /var/run/docker.sock:/var/run/docker.sock --name ttnode --hostname ttnode --net=host --restart=always --memory=2g tiptime/ttnode:latest</span><br></pre></td></tr></table></figure>
+
+<h2 id="网心云"><a href="#网心云" class="headerlink" title="网心云"></a><a href="https://act.walk-live.com/acts/invite/v3/?inviteid=d96c8b9f">网心云</a></h2><p>/mnt/wxedge_storage 是 host 主机上的本地目录，用来存放其缓存文件。如果需要可以自行修改</p>
+<p>/storage:rw 是 docker 镜像中的目录，无需修改</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name=wxedge --restart=always --privileged --net=host --tmpfs /run --tmpfs /tmp -v /mnt/wxedge_storage:/storage:rw -d registry.hub.docker.com/onething1/wxedge</span><br></pre></td></tr></table></figure>
+
+<p>上述几条命令可以非常快速地架设起节点，几分钟你家的宽带就开始为你赚钱啦！</p>
+<h1 id="网络环境"><a href="#网络环境" class="headerlink" title="网络环境"></a>网络环境</h1><p>另外需要提醒的是家中的宽带一般都需要打开路由器上的 UPNP 功能，这样才能让网络流量可以穿越路由器到达这些docker 节点中。具体打开的方法根据路由器型号，品牌的不同也多种多样。大家可以自行在网上查找</p>
+<p>并且如果需要在一台设备上跑多个 docker 实例，还需将 docker 的网络配置为 macvlan 的模式：</p>
+<p>将网卡设置为混杂模式：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">crontab -e</span><br><span class="line"></span><br><span class="line">@reboot /usr/sbin/ifconfig eth0 promisc</span><br></pre></td></tr></table></figure>
+
+<p>raspberry 的话安装包: </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt install linux-modules-extra-raspi</span><br></pre></td></tr></table></figure>
+
+<p>创建 macvlan 网络，192.168.1.0/24 可以理解为家里的网络网段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker network create -d macvlan --subnet=192.168.1.0/24 --gateway=192.168.1.254 -o parent=eth0 -o macvlan_mode=bridge macnet</span><br></pre></td></tr></table></figure>
+
+<p>在 macvlan 网络中创建镜像:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name=wxedge --restart=always --privileged=true --net=macnet --ip=192.168.1.100 --tmpfs /run --tmpfs /tmp -v /mnt/wxedge_storage:/storage:rw -d registry.hub.docker.com/onething1/wxedge</span><br><span class="line">docker run -d -v /mnt/tiantang:/mnt/data/ttnode -v /var/run/docker.sock:/var/run/docker.sock --name ttnode --hostname ttnode --net=macnet --ip=192.168.1.101 --privileged=true --restart=always tiptime/ttnode:latest</span><br><span class="line">docker run -d --restart always --net=macnet --ip=192.168.1.102 --privileged=true --name tm traffmonetizer/cli:arm64v8 start accept --token xxx</span><br><span class="line">docker run -d --restart always --net=macnet --ip=192.168.1.103 --privileged=true -e P2P_EMAIL=xxx --name peer2profit peer2profit/peer2profit_linux:latest</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>docker</category>
+        <category>cdn</category>
+      </categories>
+      <tags>
+        <tag>网心云</tag>
+        <tag>甜糖</tag>
+        <tag>traffmonetizer</tag>
+        <tag>peer2profit</tag>
+        <tag>raspberry pi 4b</tag>
       </tags>
   </entry>
 </search>
