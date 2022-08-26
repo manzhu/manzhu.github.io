@@ -141,173 +141,6 @@
       </tags>
   </entry>
   <entry>
-    <title>eve-ng 安装初始化</title>
-    <url>/cn/eve-ng-install/</url>
-    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
-<span id="more"></span>
-
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
-<p>常用的资源如下:</p>
-<ul>
-<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
-<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
-</ul>
-<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
-<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
-
-<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
-<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
-
-<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
-
-<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>install</tag>
-        <tag>router</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Ubuntu 18.04 安装 gitlab &amp; gitlab-runner</title>
-    <url>/cn/gitlab-install/</url>
-    <content><![CDATA[<p>本文初步介绍了在 Ubuntu 18.04 上安装 gitlab-ce 以及 gitlab runner 的方法. gitlab-ce 在收到代码的提交后可以触发gitlab runner 执行 CI 命令. gitlab runner 默认使用  <code>gitlab-runner</code> 的账号运行 CI 命令.</p>
-<span id="more"></span>
-
-<h2 id="gitlab"><a href="#gitlab" class="headerlink" title="gitlab"></a>gitlab</h2><ul>
-<li><p>运行官方提供的脚本添加安装源:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash</span><br></pre></td></tr></table></figure>
-
-<p>  安装完成后可以查看可以选择安装的版本:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt-cache madison gitlab-ce</span><br></pre></td></tr></table></figure></li>
-<li><p>安装 gitlab-ce</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install gitlab-ce=13.11.3-ce.0</span><br></pre></td></tr></table></figure></li>
-</ul>
-<ul>
-<li><p>配置 gitlab-ce</p>
-<p>  修改 /etc/gitlab/gitlab.rb 中的 external url, 设置为服务器的 IP 地址: external_url ‘<a href="http://192.168.0.1&/#39;">http://192.168.0.1&#39;</a>. 修改完成后应用配置并启动服务</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gitlab-ctl reconfigure</span><br><span class="line">gitlab-ctl status</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h2 id="gitlab-runner"><a href="#gitlab-runner" class="headerlink" title="gitlab runner"></a>gitlab runner</h2><p>安装 gitlab runner 时要尽量选择与 gitlab-ce 相同的版本.</p>
-<ul>
-<li><p>运行官方提供的脚本添加安装源:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -L &quot;https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh&quot; | sudo bash</span><br></pre></td></tr></table></figure>
-
-<p>  安装完成后可以查看可以选择安装的版本:</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt-cache madison gitlab-runner</span><br></pre></td></tr></table></figure></li>
-<li><p>安装 gitlab-runner</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install gitlab-runner=13.11.0</span><br></pre></td></tr></table></figure></li>
-<li><p>注册 gitlab-runner</p>
-<p>  其中 token 在 gitlab 中的 <code>Admin Area &gt; Runner</code> 中可以找到, 并在注册完毕后取消勾选 <code>Lock to current projects</code> 选项以解锁这个gitlab runner.</p>
-  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gitlab-runner register</span><br><span class="line"></span><br><span class="line">[root@runner gitlab_ci]# ./gitlab-runner register</span><br><span class="line">Runtime platform                                    arch=amd64 os=linux pid=37194 revision=a8a019e0 version=12.3.0</span><br><span class="line">Running in system-mode.</span><br><span class="line"></span><br><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):</span><br><span class="line">http://10.154.172.173/</span><br><span class="line">Please enter the gitlab-ci token for this runner:</span><br><span class="line">_sAP33YvzuAxX4LnkmP5</span><br><span class="line">Please enter the gitlab-ci description for this runner:</span><br><span class="line">[runner ]: for_test</span><br><span class="line">Please enter the gitlab-ci tags for this runner (comma separated):</span><br><span class="line">for_test</span><br><span class="line">Registering runner... succeeded                     runner=_sAPk3Yv</span><br><span class="line">Please enter the executor: parallels, shell, virtualbox, docker+machine, custom, docker, docker-ssh, ssh, docker-ssh+machine, kubernetes:</span><br><span class="line">shell</span><br><span class="line">Runner registered successfully. Feel free to start it, but if it&#x27;s running already the config should be automatically reloaded!</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>gitlab runner</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在树莓派上点亮你的 Kubernetes 集群</title>
-    <url>/cn/k8s-on-rasberry-pi/</url>
-    <content><![CDATA[<p>提到 raspberry pi 相信大家都不陌生, 简单来说它就是一台名片大小基于 ARM 架构的计算机. 经过几代的发展 raspberry pi 的硬件配置有了长足的进步. 在目前最新的 4b 版本上, raspberry pi 可以提供 4 核, 8GB RAM 的配置. 这也使得它的可玩性大大提高. 最近恰好在学习 Kubernetes, 所以就想到用 raspberry pi 来组一台 Kubernetes 集群. 对于这台集群我希望它拥有低功耗, 安静, 但最主要是可以稳定地运行多个服务. 这篇文章是这个系列的第一篇, 先来介绍如何在一台由4块 raspberry pi 4b 组成的硬件集群上搭建 kubernetes cluster.</p>
-<span id="more"></span>
-
-<h2 id="硬件准备"><a href="#硬件准备" class="headerlink" title="硬件准备"></a>硬件准备</h2><p>我这次选择了 4 台 raspberry pi 4b 8GB 版本. 其中一台 master, 另外三台 node 节点. 树莓派默认需要一个 5V 3A 的 type c 电源以及一个千兆有线网口, 这样如果要部署一个 4 节点的集群就要准备 8 根线 ( 4 根电源线 + 4 根网线). 考虑到布线的简洁清爽, 我为树莓派加装了一个 POE 模块, 有了 POE 模块就可以用一根网线同时提供网络和供电功能, 这样只需要 4 根网线以及一台 POE 交换机/路由器即可解决所有的供电和网络需求. 另外每台树莓派配有一块 64GB 的 sdcard 用来安装系统. </p>
-<h2 id="软件准备"><a href="#软件准备" class="headerlink" title="软件准备"></a>软件准备</h2><p>操作系统方面我们选择目前最新的 LTS 版本, Ubuntu 20.04 版. 我们使用 usbimager  将ubuntu 镜像刷入 sdcard. Kubernetes 安装最新的稳定版本 1.22.2. 需要用到的软件下载地址如下:</p>
-<ul>
-<li><a href="https://ubuntu.com/download/raspberry-pi">Ubuntu 20.04 64 bit for raspberry pi</a></li>
-<li><a href="https://gitlab.com/bztsrc/usbimager">usbimage</a></li>
-</ul>
-<h2 id="安装步骤"><a href="#安装步骤" class="headerlink" title="安装步骤"></a>安装步骤</h2><h3 id="初步准备"><a href="#初步准备" class="headerlink" title="初步准备"></a>初步准备</h3><ol>
-<li><p>usbimager 使用非常简单, 在界面中选择下载的20.04镜像并指定目标 sdcard 设备进行写入. 如果 sdcard 上存在其他系统或者分区, 建议可以将这些分区先删除后再进行系统刷入.</p>
-</li>
-<li><p>完成 4 台设备的系统刷入后, 将 sdcard 插入树莓派并连接到POE进行初步测试. 树莓派默认通过 DHCP 获取 IP 地址. 因此如果顺利的话, 可以在路由器的管理界面中看到树莓派分配的 IP 地址. 为了方便今后的使用, 我们可以在此时绑定 MAC 与 IP 地址的分配. 这样 4 台树莓派都获得了固定的 IP 地址. 在我的环境中 4 台树莓派的地址分配如下:</p>
-</li>
-</ol>
-<ul>
-<li>master01: 172.16.0.1</li>
-<li>node01: 172.16.0.11</li>
-<li>node02: 172.16.0.12</li>
-<li>node03: 172.16.0.13</li>
-</ul>
-<h3 id="系统准备"><a href="#系统准备" class="headerlink" title="系统准备"></a>系统准备</h3><p>在<code>所有的树莓派</code>上完成以下准备工作:</p>
-<ol start="0">
-<li><p>更新系统: <code>sudo apt update &amp;&amp; sudo apt dist-upgrade &amp;&amp; apt-get install -y apt-transport-https</code></p>
-</li>
-<li><p>创建自定义用户: <code>sudo adduser manfred</code></p>
-</li>
-<li><p>给予该用户 sudo 权限: <code>sudo usermod -aG sudo manfred</code></p>
-</li>
-<li><p>设置主机名(注意每个node 的名字不同): <code>echo master01 | sudo tee /etc/hostname</code></p>
-</li>
-<li><p>为集群内所有节点添加 hosts 文件映射:</p>
- <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># cat /etc/hosts</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">172.16.0.1      master01</span><br><span class="line">172.16.0.11     node01</span><br><span class="line">172.16.0.12     node02</span><br><span class="line">172.16.0.13     node03</span><br></pre></td></tr></table></figure></li>
-<li><p>编辑 /boot/firmware/cmdline.txt 并在行末添加:</p>
- <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1 swapaccount=1</span><br></pre></td></tr></table></figure></li>
-<li><p>重启: <code>sudo reboot</code></p>
-</li>
-<li><p>安装 docker: <code>curl -sSL get.docker.com | sudo sh</code></p>
-</li>
-<li><p>将自己的账号加入 docker 组: <code>sudo usermod -aG docker manfred</code></p>
-</li>
-<li><p>编辑 docker 配置文件并指定中文源: <code>sudo vi /etc/docker/daemon.json</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;exec-opts&quot;: [&quot;native.cgroupdriver=systemd&quot;],</span><br><span class="line">  &quot;log-driver&quot;: &quot;json-file&quot;,</span><br><span class="line">  &quot;log-opts&quot;: &#123;</span><br><span class="line">    &quot;max-size&quot;: &quot;100m&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;storage-driver&quot;: &quot;overlay2&quot;,</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://docker.mirrors.ustc.edu.cn&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>应用上述配置: <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code> </p>
-</li>
-<li><p>开启路由: <code>sudo sed -i &#39;s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g&#39; /etc/sysctl.conf</code></p>
-</li>
-<li><p>重启系统: <code>sudo reboot</code></p>
-</li>
-<li><p>重启后确定 docker 工作正常: docker run hello-world </p>
-</li>
-</ol>
-<p>完成以上步骤后, 下面开始进入 kubernetes 的安装过程.</p>
-<h3 id="Kubernetes-安装准备"><a href="#Kubernetes-安装准备" class="headerlink" title="Kubernetes 安装准备"></a>Kubernetes 安装准备</h3><p>在所有树莓派上执行以下步骤:</p>
-<ol>
-<li>为Kubernetes 设置国内源:<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add - </span><br><span class="line">cat &lt;&lt;EOF &gt;/etc/apt/sources.list.d/kubernetes.list</span><br><span class="line">deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main</span><br><span class="line">EOF  </span><br><span class="line">sudo apt-get update</span><br></pre></td></tr></table></figure></li>
-<li>由于我们安装的版本 1.22.2 比较新, 所以可以手动下载这些镜像并用 tag 命令进行修正:<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo docker pull coredns/coredns:1.8.4</span><br><span class="line">sudo docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns:v1.8.4</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sudo docker pull cjk2atmb/kube-controller-manager:v1.22.2</span><br><span class="line">sudo docker tag cjk2atmb/kube-controller-manager:v1.22.2 registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.2</span><br></pre></td></tr></table></figure></li>
-<li>在上述准备工作完成后我们就可以开始安装: <code>sudo apt-get install -y kubelet kubeadm kubectl</code></li>
-</ol>
-<h3 id="master-节点"><a href="#master-节点" class="headerlink" title="master 节点"></a>master 节点</h3><ol>
-<li><p>初始化 Kubernetes master 节点: </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo kubeadm init --image-repository=registry.aliyuncs.com/google_containers --pod-network-cidr=10.244.0.0/16</span><br></pre></td></tr></table></figure></li>
-<li><p>如果一切正常的话在上述命令运行完后会看到如下提示. 将下面的 kubeadm join 命令保存好以备后续添加 node 节点时使用:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Your Kubernetes control-plane has initialized successfully!</span><br><span class="line"></span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">  mkdir -p $HOME/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line"></span><br><span class="line">Alternatively, if you are the root user, you can run:</span><br><span class="line"></span><br><span class="line">  export KUBECONFIG=/etc/kubernetes/admin.conf</span><br><span class="line"></span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run &quot;kubectl apply -f [podnetwork].yaml&quot; with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">Then you can join any number of worker nodes by running the following on each as root:</span><br><span class="line"></span><br><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:xxxxx</span><br></pre></td></tr></table></figure></li>
-<li><p>运行以下命令初始化 kubectl:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line">echo &#x27;source &lt;(kubectl completion bash)&#x27; &gt;&gt; ~/.bashrc</span><br></pre></td></tr></table></figure></li>
-<li><p>安装 flannel 网络组件:<br><code>kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></p>
-</li>
-<li><p>最后确保所有镜像均可正常运行:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">NAMESPACE     NAME                               READY   STATUS    RESTARTS       AGE</span><br><span class="line">default       demoapp-79b7d5f68b-bp9z2           1/1     Running   0              30h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-kwsng           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-qbmdn           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   etcd-master01                      1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-apiserver-master01            1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-controller-manager-master01   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-flannel-ds-kghwp              1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-flannel-ds-rcjfq              1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-6mksg                   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-w95hs                   1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-scheduler-master01            1/1     Running   5 (41h ago)    42h</span><br></pre></td></tr></table></figure></li>
-</ol>
-<h3 id="node-节点"><a href="#node-节点" class="headerlink" title="node 节点"></a>node 节点</h3><ol>
-<li><p>复制之前的 join 命令:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx --discovery-token-ca-cert-hash sha256:xxxxx </span><br></pre></td></tr></table></figure>
-<p>如果 token 丢失或者过期可以重新生成: <code>kubeadm token create --print-join-command</code> </p>
-</li>
-<li><p>安装完成后用 kubectl get nodes 查看安装情况. 如果 node 一直显示<code>Not Ready</code>, 可以尝试重启 node. 如果 node 没有 role, 可以自己给node 打role 标签: </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl label node node01 node-role.kubernetes.io/worker=worker</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>这样基本完成了Kubernetes 集群的安装. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>k8s</category>
-      </categories>
-      <tags>
-        <tag>raspberry pi</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>k8s 存储初始化之树莓派外接USB硬盘</title>
     <url>/cn/k8s-nfs-as-pv-pvc/</url>
     <content><![CDATA[<p>在<a href="https://www.m4n2.com/cn/k8s-on-rasberry-pi/">之前的文章</a>中我们在 4 台树莓派 model 4b 上搭建了 k8s 集群. 但是这台集群有个小缺陷, 那就是我们为每块树莓派仅仅置备了 64 GB 的 sdcard 做为系统盘以及存储. 这点点空间实在是捉襟见肘, 更不用说后面还要跑一些 BT 下载, 私有云盘之类的应用了. 恰好家里有一块闲置的 3.5 寸 2T 硬盘, 所以就用它来做为 k8s 的存储空间也能算物尽启用吧. 当然如果大家家里有 NAS 设备, 比如群晖, 也完全可以利用其做为 NFS 服务器. 而且因为 NAS 一般都有多硬盘 RAID 方案, 所以数据的存放也更加可靠.</p>
@@ -562,6 +395,144 @@
       </tags>
   </entry>
   <entry>
+    <title>Ubuntu 18.04 安装 gitlab &amp; gitlab-runner</title>
+    <url>/cn/gitlab-install/</url>
+    <content><![CDATA[<p>本文初步介绍了在 Ubuntu 18.04 上安装 gitlab-ce 以及 gitlab runner 的方法. gitlab-ce 在收到代码的提交后可以触发gitlab runner 执行 CI 命令. gitlab runner 默认使用  <code>gitlab-runner</code> 的账号运行 CI 命令.</p>
+<span id="more"></span>
+
+<h2 id="gitlab"><a href="#gitlab" class="headerlink" title="gitlab"></a>gitlab</h2><ul>
+<li><p>运行官方提供的脚本添加安装源:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash</span><br></pre></td></tr></table></figure>
+
+<p>  安装完成后可以查看可以选择安装的版本:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt-cache madison gitlab-ce</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 gitlab-ce</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install gitlab-ce=13.11.3-ce.0</span><br></pre></td></tr></table></figure></li>
+</ul>
+<ul>
+<li><p>配置 gitlab-ce</p>
+<p>  修改 /etc/gitlab/gitlab.rb 中的 external url, 设置为服务器的 IP 地址: external_url ‘<a href="http://192.168.0.1&/#39;">http://192.168.0.1&#39;</a>. 修改完成后应用配置并启动服务</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gitlab-ctl reconfigure</span><br><span class="line">gitlab-ctl status</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="gitlab-runner"><a href="#gitlab-runner" class="headerlink" title="gitlab runner"></a>gitlab runner</h2><p>安装 gitlab runner 时要尽量选择与 gitlab-ce 相同的版本.</p>
+<ul>
+<li><p>运行官方提供的脚本添加安装源:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl -L &quot;https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh&quot; | sudo bash</span><br></pre></td></tr></table></figure>
+
+<p>  安装完成后可以查看可以选择安装的版本:</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">apt-cache madison gitlab-runner</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 gitlab-runner</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo apt-get install gitlab-runner=13.11.0</span><br></pre></td></tr></table></figure></li>
+<li><p>注册 gitlab-runner</p>
+<p>  其中 token 在 gitlab 中的 <code>Admin Area &gt; Runner</code> 中可以找到, 并在注册完毕后取消勾选 <code>Lock to current projects</code> 选项以解锁这个gitlab runner.</p>
+  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gitlab-runner register</span><br><span class="line"></span><br><span class="line">[root@runner gitlab_ci]# ./gitlab-runner register</span><br><span class="line">Runtime platform                                    arch=amd64 os=linux pid=37194 revision=a8a019e0 version=12.3.0</span><br><span class="line">Running in system-mode.</span><br><span class="line"></span><br><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):</span><br><span class="line">http://10.154.172.173/</span><br><span class="line">Please enter the gitlab-ci token for this runner:</span><br><span class="line">_sAP33YvzuAxX4LnkmP5</span><br><span class="line">Please enter the gitlab-ci description for this runner:</span><br><span class="line">[runner ]: for_test</span><br><span class="line">Please enter the gitlab-ci tags for this runner (comma separated):</span><br><span class="line">for_test</span><br><span class="line">Registering runner... succeeded                     runner=_sAPk3Yv</span><br><span class="line">Please enter the executor: parallels, shell, virtualbox, docker+machine, custom, docker, docker-ssh, ssh, docker-ssh+machine, kubernetes:</span><br><span class="line">shell</span><br><span class="line">Runner registered successfully. Feel free to start it, but if it&#x27;s running already the config should be automatically reloaded!</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>gitlab runner</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在树莓派上点亮你的 Kubernetes 集群</title>
+    <url>/cn/k8s-on-rasberry-pi/</url>
+    <content><![CDATA[<p>提到 raspberry pi 相信大家都不陌生, 简单来说它就是一台名片大小基于 ARM 架构的计算机. 经过几代的发展 raspberry pi 的硬件配置有了长足的进步. 在目前最新的 4b 版本上, raspberry pi 可以提供 4 核, 8GB RAM 的配置. 这也使得它的可玩性大大提高. 最近恰好在学习 Kubernetes, 所以就想到用 raspberry pi 来组一台 Kubernetes 集群. 对于这台集群我希望它拥有低功耗, 安静, 但最主要是可以稳定地运行多个服务. 这篇文章是这个系列的第一篇, 先来介绍如何在一台由4块 raspberry pi 4b 组成的硬件集群上搭建 kubernetes cluster.</p>
+<span id="more"></span>
+
+<h2 id="硬件准备"><a href="#硬件准备" class="headerlink" title="硬件准备"></a>硬件准备</h2><p>我这次选择了 4 台 raspberry pi 4b 8GB 版本. 其中一台 master, 另外三台 node 节点. 树莓派默认需要一个 5V 3A 的 type c 电源以及一个千兆有线网口, 这样如果要部署一个 4 节点的集群就要准备 8 根线 ( 4 根电源线 + 4 根网线). 考虑到布线的简洁清爽, 我为树莓派加装了一个 POE 模块, 有了 POE 模块就可以用一根网线同时提供网络和供电功能, 这样只需要 4 根网线以及一台 POE 交换机/路由器即可解决所有的供电和网络需求. 另外每台树莓派配有一块 64GB 的 sdcard 用来安装系统. </p>
+<p>具体使用到的清单如下：</p>
+<ul>
+<li><a href="https://u.jd.com/7MNfutz">树莓派4b 8GB 版</a></li>
+</ul>
+<h2 id="软件准备"><a href="#软件准备" class="headerlink" title="软件准备"></a>软件准备</h2><p>操作系统方面我们选择目前最新的 LTS 版本, Ubuntu 20.04 版. 我们使用 usbimager  将ubuntu 镜像刷入 sdcard. Kubernetes 安装最新的稳定版本 1.22.2. 需要用到的软件下载地址如下:</p>
+<ul>
+<li><a href="https://ubuntu.com/download/raspberry-pi">Ubuntu 20.04 64 bit for raspberry pi</a></li>
+<li><a href="https://gitlab.com/bztsrc/usbimager">usbimage</a></li>
+</ul>
+<h2 id="安装步骤"><a href="#安装步骤" class="headerlink" title="安装步骤"></a>安装步骤</h2><h3 id="初步准备"><a href="#初步准备" class="headerlink" title="初步准备"></a>初步准备</h3><ol>
+<li><p>usbimager 使用非常简单, 在界面中选择下载的20.04镜像并指定目标 sdcard 设备进行写入. 如果 sdcard 上存在其他系统或者分区, 建议可以将这些分区先删除后再进行系统刷入.</p>
+</li>
+<li><p>完成 4 台设备的系统刷入后, 将 sdcard 插入树莓派并连接到POE进行初步测试. 树莓派默认通过 DHCP 获取 IP 地址. 因此如果顺利的话, 可以在路由器的管理界面中看到树莓派分配的 IP 地址. 为了方便今后的使用, 我们可以在此时绑定 MAC 与 IP 地址的分配. 这样 4 台树莓派都获得了固定的 IP 地址. 在我的环境中 4 台树莓派的地址分配如下:</p>
+</li>
+</ol>
+<ul>
+<li>master01: 172.16.0.1</li>
+<li>node01: 172.16.0.11</li>
+<li>node02: 172.16.0.12</li>
+<li>node03: 172.16.0.13</li>
+</ul>
+<h3 id="系统准备"><a href="#系统准备" class="headerlink" title="系统准备"></a>系统准备</h3><p>在<code>所有的树莓派</code>上完成以下准备工作:</p>
+<ol start="0">
+<li><p>更新系统: <code>sudo apt update &amp;&amp; sudo apt dist-upgrade &amp;&amp; apt-get install -y apt-transport-https</code></p>
+</li>
+<li><p>创建自定义用户: <code>sudo adduser manfred</code></p>
+</li>
+<li><p>给予该用户 sudo 权限: <code>sudo usermod -aG sudo manfred</code></p>
+</li>
+<li><p>设置主机名(注意每个node 的名字不同): <code>echo master01 | sudo tee /etc/hostname</code></p>
+</li>
+<li><p>为集群内所有节点添加 hosts 文件映射:</p>
+ <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># cat /etc/hosts</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">172.16.0.1      master01</span><br><span class="line">172.16.0.11     node01</span><br><span class="line">172.16.0.12     node02</span><br><span class="line">172.16.0.13     node03</span><br></pre></td></tr></table></figure></li>
+<li><p>编辑 /boot/firmware/cmdline.txt 并在行末添加:</p>
+ <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1 swapaccount=1</span><br></pre></td></tr></table></figure></li>
+<li><p>重启: <code>sudo reboot</code></p>
+</li>
+<li><p>安装 docker: <code>curl -sSL get.docker.com | sudo sh</code></p>
+</li>
+<li><p>将自己的账号加入 docker 组: <code>sudo usermod -aG docker manfred</code></p>
+</li>
+<li><p>编辑 docker 配置文件并指定中文源: <code>sudo vi /etc/docker/daemon.json</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;exec-opts&quot;: [&quot;native.cgroupdriver=systemd&quot;],</span><br><span class="line">  &quot;log-driver&quot;: &quot;json-file&quot;,</span><br><span class="line">  &quot;log-opts&quot;: &#123;</span><br><span class="line">    &quot;max-size&quot;: &quot;100m&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;storage-driver&quot;: &quot;overlay2&quot;,</span><br><span class="line">  &quot;registry-mirrors&quot;: [&quot;https://docker.mirrors.ustc.edu.cn&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>应用上述配置: <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code> </p>
+</li>
+<li><p>开启路由: <code>sudo sed -i &#39;s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g&#39; /etc/sysctl.conf</code></p>
+</li>
+<li><p>重启系统: <code>sudo reboot</code></p>
+</li>
+<li><p>重启后确定 docker 工作正常: docker run hello-world </p>
+</li>
+</ol>
+<p>完成以上步骤后, 下面开始进入 kubernetes 的安装过程.</p>
+<h3 id="Kubernetes-安装准备"><a href="#Kubernetes-安装准备" class="headerlink" title="Kubernetes 安装准备"></a>Kubernetes 安装准备</h3><p>在所有树莓派上执行以下步骤:</p>
+<ol>
+<li>为Kubernetes 设置国内源:<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add - </span><br><span class="line">cat &lt;&lt;EOF &gt;/etc/apt/sources.list.d/kubernetes.list</span><br><span class="line">deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main</span><br><span class="line">EOF  </span><br><span class="line">sudo apt-get update</span><br></pre></td></tr></table></figure></li>
+<li>由于我们安装的版本 1.22.2 比较新, 所以可以手动下载这些镜像并用 tag 命令进行修正:<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo docker pull coredns/coredns:1.8.4</span><br><span class="line">sudo docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns:v1.8.4</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sudo docker pull cjk2atmb/kube-controller-manager:v1.22.2</span><br><span class="line">sudo docker tag cjk2atmb/kube-controller-manager:v1.22.2 registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.2</span><br></pre></td></tr></table></figure></li>
+<li>在上述准备工作完成后我们就可以开始安装: <code>sudo apt-get install -y kubelet kubeadm kubectl</code></li>
+</ol>
+<h3 id="master-节点"><a href="#master-节点" class="headerlink" title="master 节点"></a>master 节点</h3><ol>
+<li><p>初始化 Kubernetes master 节点: </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo kubeadm init --image-repository=registry.aliyuncs.com/google_containers --pod-network-cidr=10.244.0.0/16</span><br></pre></td></tr></table></figure></li>
+<li><p>如果一切正常的话在上述命令运行完后会看到如下提示. 将下面的 kubeadm join 命令保存好以备后续添加 node 节点时使用:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Your Kubernetes control-plane has initialized successfully!</span><br><span class="line"></span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line"></span><br><span class="line">  mkdir -p $HOME/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line"></span><br><span class="line">Alternatively, if you are the root user, you can run:</span><br><span class="line"></span><br><span class="line">  export KUBECONFIG=/etc/kubernetes/admin.conf</span><br><span class="line"></span><br><span class="line">You should now deploy a pod network to the cluster.</span><br><span class="line">Run &quot;kubectl apply -f [podnetwork].yaml&quot; with one of the options listed at:</span><br><span class="line">  https://kubernetes.io/docs/concepts/cluster-administration/addons/</span><br><span class="line"></span><br><span class="line">Then you can join any number of worker nodes by running the following on each as root:</span><br><span class="line"></span><br><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:xxxxx</span><br></pre></td></tr></table></figure></li>
+<li><p>运行以下命令初始化 kubectl:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br><span class="line">echo &#x27;source &lt;(kubectl completion bash)&#x27; &gt;&gt; ~/.bashrc</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 flannel 网络组件:<br><code>kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></p>
+</li>
+<li><p>最后确保所有镜像均可正常运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">NAMESPACE     NAME                               READY   STATUS    RESTARTS       AGE</span><br><span class="line">default       demoapp-79b7d5f68b-bp9z2           1/1     Running   0              30h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-kwsng           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   coredns-7f6cbbb7b8-qbmdn           1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   etcd-master01                      1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-apiserver-master01            1/1     Running   5 (41h ago)    42h</span><br><span class="line">kube-system   kube-controller-manager-master01   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-flannel-ds-kghwp              1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-flannel-ds-rcjfq              1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-6mksg                   1/1     Running   1 (41h ago)    42h</span><br><span class="line">kube-system   kube-proxy-w95hs                   1/1     Running   1 (41h ago)    41h</span><br><span class="line">kube-system   kube-scheduler-master01            1/1     Running   5 (41h ago)    42h</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="node-节点"><a href="#node-节点" class="headerlink" title="node 节点"></a>node 节点</h3><ol>
+<li><p>复制之前的 join 命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo kubeadm join 172.16.0.1:6443 --token xxxxxxx --discovery-token-ca-cert-hash sha256:xxxxx </span><br></pre></td></tr></table></figure>
+<p>如果 token 丢失或者过期可以重新生成: <code>kubeadm token create --print-join-command</code> </p>
+</li>
+<li><p>安装完成后用 kubectl get nodes 查看安装情况. 如果 node 一直显示<code>Not Ready</code>, 可以尝试重启 node. 如果 node 没有 role, 可以自己给node 打role 标签: </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl label node node01 node-role.kubernetes.io/worker=worker</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>这样基本完成了Kubernetes 集群的安装. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>raspberry pi</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>树莓派踩坑指南之外挂硬盘</title>
     <url>/cn/pi-hard-disk/</url>
     <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
@@ -633,6 +604,39 @@
         <tag>pod</tag>
         <tag>service</tag>
         <tag>iptables</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>eve-ng 安装初始化</title>
+    <url>/cn/eve-ng-install/</url>
+    <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
+<span id="more"></span>
+
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>eve-ng 分为收费版和免费的 community 版本, 具体区别可以参考<a href="https://www.eve-ng.net/index.php/features-compare/">这里</a>; eve-ng 可以在 bare metal, vmware workstation 或者 esxi 上部署. 在虚拟机环境上部署时相当于在 hypervisor 中再嵌套虚拟, 所以性能会有一定影响. 好在 eve-ng 的安装文档非常清晰, 安装时只要按照官网的文档即可. </p>
+<p>常用的资源如下:</p>
+<ul>
+<li><a href="https://www.eve-ng.net/index.php/documentation/installation/">安装eve-ng</a></li>
+<li><a href="https://www.eve-ng.net/index.php/documentation/howtos/">上传各厂商的image</a></li>
+</ul>
+<h2 id="上传镜像"><a href="#上传镜像" class="headerlink" title="上传镜像"></a>上传镜像</h2><p>我们以思科的 vios 和 viosl2 为例来快速演示如何将某个厂商的镜像上传至 eve-ng 以供后期使用. vios 用来模拟 cisco router 而 viosl2 用来模拟 cisco switch.</p>
+<p>首先登录 eve-ng 的 ssh 并创建如下文件夹:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir /opt/unetlab/addons/qemu/vios-adventerprisek9-m-15.6.2T</span><br><span class="line">mkdir /opt/unetlab/addons/qemu/viosl2-adventerprisek9-m-15.2.4055</span><br></pre></td></tr></table></figure>
+
+<p>这里需要注意的是 qemu 后的文件夹名称必须要和 image 名称一致并且符合 eve-ng 的<a href="https://www.eve-ng.net/index.php/documentation/qemu-image-namings/">命名规范</a></p>
+<p>文件夹创建完毕后将上述两 image 上传到对应的文件夹中. 这里需要注意的是 virtioa.qcow2 是上述两个image 转换后的 image 名称, 需要符合命名规范不能自行修改.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># ls -al ./*</span><br><span class="line">./vios-adventerprisek9-m-15.6.2T:</span><br><span class="line">total 125452</span><br><span class="line">drwxr-xr-x 2 root root      4096 Oct  8 23:04 .</span><br><span class="line">drwxr-xr-x 4 root root      4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 128450560 Oct  8 23:06 virtioa.qcow2</span><br><span class="line"></span><br><span class="line">./viosl2-adventerprisek9-m-15.2.4055:</span><br><span class="line">total 94600</span><br><span class="line">drwxr-xr-x 2 root root     4096 Oct  8 23:07 .</span><br><span class="line">drwxr-xr-x 4 root root     4096 Oct  8 22:58 ..</span><br><span class="line">-rw-r--r-- 1 root root 96862208 Oct  8 23:08 virtioa.qcow2</span><br></pre></td></tr></table></figure>
+
+<p>上传完毕后在上面两个目录内均需要执行下述命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/opt/unetlab/wrappers/unl_wrapper -a fixpermissions</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以在 eve-ng 的 lab 界面中直接拖拽并使用了. 至于其他支持的厂商设备都可以在上述的链接中找到部署方法. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>install</tag>
+        <tag>router</tag>
       </tags>
   </entry>
 </search>
