@@ -1,6 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>轻松创建 docker image</title>
+    <url>/cn/build-docker-image/</url>
+    <content><![CDATA[<p>在 Docker 技术出现之前, 搭建 lab 环境复现问题实在是件非常让人头疼的事情. 按照传统的方式搭建 LAB 环境非常麻烦. 比如你需要测试 nginx 或是 ftp, 我们需要安装 linux 服务器, 配置网络, 分配 IP, 更新软件源, 安装软件包, 调整配置文件… 而 Docker 的出现彻底解放了这些繁琐的工作! 通过一个 Dockerfile, 用户可以build 出符合自己需要的 docker image 并在几分钟内拉起一个服务.</p>
+<span id="more"></span>
+
+<h2 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><p>要创建自己的 docker image, 最重要的就是这个 <code>Dockerfile</code> 啦! Dockerfile 是一个纯文本文件, 里面包含了创建 docker image 的各种”指令”. 简单来说docker 会一步步执行 Dockerfile 中的命令来完成一个image 的构建. 比如我们来看一个简单的 Dockerfile:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">FROM ubuntu:18.04</span><br><span class="line">RUN apt-get -yqq update &amp;&amp; apt-get -yqq install nginx </span><br><span class="line">RUN mkdir -p /var/www/html/website</span><br><span class="line">ADD nginx/global.conf /etc/nginx/conf.d/</span><br><span class="line">ADD nginx/nginx.conf /etc/nginx/nginx.conf</span><br><span class="line">EXPOSE 80</span><br><span class="line">CMD /bin/sh -c nginx</span><br></pre></td></tr></table></figure>
+
+<p>其实不用过多解释大家应该基本也能理解这些语句的含义:</p>
+<ul>
+<li>FROM ubuntu:18.04: 以官方的ubuntu 18.04 为模板</li>
+<li>RUN apt-get -yqq update &amp;&amp; apt-get -yqq install nginx:  执行 apt 更新并且安装 nginx 软件包</li>
+<li>RUN mkdir -p /var/www/html/website: 在 docker image 中创建存放站点的目录</li>
+<li>ADD nginx/global.conf /etc/nginx/conf.d/: 当前 Dockerfile 同级目录中的 nginx/global.conf 放入 container 中的 /etc/nginx/conf.d/</li>
+<li>ADD nginx/nginx.conf /etc/nginx/nginx.conf: 当前目录中子目录nginx/nginx.conf 覆盖 container 中的/etc/nginx/nginx.conf</li>
+<li>EXPOSE 80: container 开启 80 端口接收外部的访问</li>
+</ul>
+<p>在 nginx/nginx.conf 中是和 nginx server 本身相关的配置参数. 在其中比较重要的是 <code>daemon off;</code> 这个参数使得nginx 保持在container 的前端运行, 从而确保服务不被终止.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ cat nginx.conf</span><br><span class="line">user www-data;</span><br><span class="line">worker_processes 4;</span><br><span class="line">pid /run/nginx.pid;</span><br><span class="line">daemon off;</span><br><span class="line"></span><br><span class="line">events &#123;  &#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">  sendfile on;</span><br><span class="line">  tcp_nopush on;</span><br><span class="line">  tcp_nodelay on;</span><br><span class="line">  keepalive_timeout 65;</span><br><span class="line">  types_hash_max_size 2048;</span><br><span class="line">  include /etc/nginx/mime.types;</span><br><span class="line">  default_type application/octet-stream;</span><br><span class="line">  access_log /var/log/nginx/access.log;</span><br><span class="line">  error_log /var/log/nginx/error.log;</span><br><span class="line">  gzip on;</span><br><span class="line">  gzip_disable &quot;msie6&quot;;</span><br><span class="line">  include /etc/nginx/conf.d/*.conf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 nginx/global.conf 中, 是我们网站的配置. 可以看到我们将网站的 root 指定为在 Dockerfile 中创建的目录 /var/www/html/website, 并且也指定了对应的日志目录. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">        listen          0.0.0.0:80;</span><br><span class="line">        server_name     _;</span><br><span class="line"></span><br><span class="line">        root            /var/www/html/website;</span><br><span class="line">        index           index.html index.htm;</span><br><span class="line"></span><br><span class="line">        access_log      /var/log/nginx/default_access.log;</span><br><span class="line">        error_log       /var/log/nginx/default_error.log;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Build"><a href="#Build" class="headerlink" title="Build"></a>Build</h2><p>完成了上面的准备工作后, 我们就可以开始 build 阶段的工作啦!  这一步只需要一条命令即可, 不过一定记得执行的时候一定切换到 Dockerfile 文件所在的目录中哦! 另外命令的最后有一个点表示 Dockerfile的路径, 千万别漏啦.(当然你也可以写 Dockerfile 的绝对路径. )</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker build -t &quot;m4n/nginx_demo&quot; .</span><br></pre></td></tr></table></figure>
+
+<p>随后docker 就会依据你的 Dockerfile 中的指令一步一步完成 image 的打包操作. 很快你的 image 就制作完毕了.</p>
+<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>image 制作完毕后, 我们可以试试看用它拉起一个镜像:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ docker run -d -p 80 --name first_site -v $PWD/website:/var/www/html/website m4n/nginx_demo nginx</span><br></pre></td></tr></table></figure>
+
+<p>我们来了解下这条命令中的几个参数:</p>
+<ul>
+<li>-d 后台运行容器  </li>
+<li>-p: 端口映射. 比如 -p 3333:80 指定主机的3333端口映射到容器的80端口; 直接写也表示直接将宿主机的 80 端口映射到容器的端口 80  </li>
+<li>-v 本地目录:容器目录. 将宿主机本地目录中的 website 链接到容器中的 /var/www/html/website 这个目录中. ( /var/www/html/website 就是上面 docker image 中的 nginx 存放站点文件的目录) 这种挂载卷的方式打通了宿主机与容器间的文件共享. 这样我们就可以在编辑本地website文件夹中的index.html内容的同时, 使得container 里的nginx 也能感知到这个变化. </li>
+</ul>
+<p>当然爱动脑筋的同学肯定想到了, 如果要对 nginx.conf 或者 global.conf 进行编辑, 只需要将它们与容器中的文件通过参数 -v 进行映射即可.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name nginx -p 80:80 -v nginx/nginx.conf:/etc/nginx/nginx.conf -v /var/log:/var/log/nginx -v nginx/global.conf:/etc/nginx/conf.d/global.conf -d nginx</span><br></pre></td></tr></table></figure>
+
+<p>Dockerfile 的编写还有许多用法, 具体可以参考<a href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference</a></p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>build</tag>
+        <tag>k8s</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Kubernetes 服务发布之 F5-BIGIP</title>
     <url>/cn/cis/</url>
     <content><![CDATA[<p>在 k8s 的世界中, 应用的一生可能稍纵即逝. 一个 pod 的存活时间可能只有几个小时甚至几分钟. 在这个快速变化的世界中里, Ingress 就像一位忙碌的交通警察默默地控制着集群内外流量的发布, 回收. 说到 Kubernetes Ingress 大家比较熟悉的是 nginx 或者是 envoy 这类基于软件实现的解决方案. 其实 Ingress 也可以基于硬件来实现. 硬件平台本身在流量的处理性能以及功能扩展上还是有软件无法相比的优势, 比如 IPV6/IPV4的转换, 基于硬件芯片的 ssl 加速处理能力, 基于硬件的 DDOS 防护以及应用安全等方面都提供了相对成熟, 易管理的方案. 下面这个例子中我们将一台 BIGIP 加入 k8s 作为其 ingress service 来为集群中的应用发布服务.</p>
@@ -75,6 +125,22 @@
       </tags>
   </entry>
   <entry>
+    <title>eve-ng-connect-external-network</title>
+    <url>/cn/eve-ng-connect-external-network/</url>
+    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
+<span id="more"></span>
+
+<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
+<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>eve-ng</category>
+      </categories>
+      <tags>
+        <tag>vmware esxi</tag>
+        <tag>network</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>eve-ng 安装初始化</title>
     <url>/cn/eve-ng-install/</url>
     <content><![CDATA[<p>一次偶然的机会接触到了 eve-ng, 一款模拟各种 IT 环境的软件. 用户可以通过 web 页面来创建各种 lab;在 lab 中可以拖拽需要的设备搭建各种拓扑. 而且 eve-ng 官方网站的资源非常清晰, 上手也很容易. 这篇文章对快速安装以及相关资源做一个索引.</p>
@@ -105,22 +171,6 @@
       <tags>
         <tag>install</tag>
         <tag>router</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>eve-ng-connect-external-network</title>
-    <url>/cn/eve-ng-connect-external-network/</url>
-    <content><![CDATA[<p>我们在<a href="https://www.m4n2.com/cn/eve-ng-install/">这篇文章</a>中简单介绍了 eve-ng 这款软件. 在 eve-ng 的世界中用户可以模拟各种厂商的设备并且方便地搭建实验环境. 然而大家可能会遇到这样一个问题: 如何将 eve-ng 模拟出的 lab 环境与外部网络设备进行连通, 比如在 eve-ng 内运行的 BGP 与 ESXI 上的其他虚拟机建立 BGP 连接?</p>
-<span id="more"></span>
-
-<p>我们以在 VMWARE ESXI 上安装的 eve-ng 为例: 在 esxi 上部署 eve-ng 时我们可以为它选择制备的网卡数量. eve-ng 会将第一块网卡称为 management 网络; 而后续的网卡分别对应名称为 Cloud1, Cloud2, Cloud3…以此类推. 而在eve-ng 镜像上的每块网卡都会接入 esxi 的 VM NETWORK上;我们可以将每个 VM NETWORK 想象为一个 VLAN. 所以只要确保 eve-ng 的网卡(CloudX) 与其他虚拟机的网卡接入同一个 VM NETWORK 即可. </p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>eve-ng</category>
-      </categories>
-      <tags>
-        <tag>vmware esxi</tag>
-        <tag>network</tag>
       </tags>
   </entry>
   <entry>
@@ -164,56 +214,6 @@
       <tags>
         <tag>git</tag>
         <tag>gitlab runner</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>轻松创建 docker image</title>
-    <url>/cn/build-docker-image/</url>
-    <content><![CDATA[<p>在 Docker 技术出现之前, 搭建 lab 环境复现问题实在是件非常让人头疼的事情. 按照传统的方式搭建 LAB 环境非常麻烦. 比如你需要测试 nginx 或是 ftp, 我们需要安装 linux 服务器, 配置网络, 分配 IP, 更新软件源, 安装软件包, 调整配置文件… 而 Docker 的出现彻底解放了这些繁琐的工作! 通过一个 Dockerfile, 用户可以build 出符合自己需要的 docker image 并在几分钟内拉起一个服务.</p>
-<span id="more"></span>
-
-<h2 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><p>要创建自己的 docker image, 最重要的就是这个 <code>Dockerfile</code> 啦! Dockerfile 是一个纯文本文件, 里面包含了创建 docker image 的各种”指令”. 简单来说docker 会一步步执行 Dockerfile 中的命令来完成一个image 的构建. 比如我们来看一个简单的 Dockerfile:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">FROM ubuntu:18.04</span><br><span class="line">RUN apt-get -yqq update &amp;&amp; apt-get -yqq install nginx </span><br><span class="line">RUN mkdir -p /var/www/html/website</span><br><span class="line">ADD nginx/global.conf /etc/nginx/conf.d/</span><br><span class="line">ADD nginx/nginx.conf /etc/nginx/nginx.conf</span><br><span class="line">EXPOSE 80</span><br><span class="line">CMD /bin/sh -c nginx</span><br></pre></td></tr></table></figure>
-
-<p>其实不用过多解释大家应该基本也能理解这些语句的含义:</p>
-<ul>
-<li>FROM ubuntu:18.04: 以官方的ubuntu 18.04 为模板</li>
-<li>RUN apt-get -yqq update &amp;&amp; apt-get -yqq install nginx:  执行 apt 更新并且安装 nginx 软件包</li>
-<li>RUN mkdir -p /var/www/html/website: 在 docker image 中创建存放站点的目录</li>
-<li>ADD nginx/global.conf /etc/nginx/conf.d/: 当前 Dockerfile 同级目录中的 nginx/global.conf 放入 container 中的 /etc/nginx/conf.d/</li>
-<li>ADD nginx/nginx.conf /etc/nginx/nginx.conf: 当前目录中子目录nginx/nginx.conf 覆盖 container 中的/etc/nginx/nginx.conf</li>
-<li>EXPOSE 80: container 开启 80 端口接收外部的访问</li>
-</ul>
-<p>在 nginx/nginx.conf 中是和 nginx server 本身相关的配置参数. 在其中比较重要的是 <code>daemon off;</code> 这个参数使得nginx 保持在container 的前端运行, 从而确保服务不被终止.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ cat nginx.conf</span><br><span class="line">user www-data;</span><br><span class="line">worker_processes 4;</span><br><span class="line">pid /run/nginx.pid;</span><br><span class="line">daemon off;</span><br><span class="line"></span><br><span class="line">events &#123;  &#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">  sendfile on;</span><br><span class="line">  tcp_nopush on;</span><br><span class="line">  tcp_nodelay on;</span><br><span class="line">  keepalive_timeout 65;</span><br><span class="line">  types_hash_max_size 2048;</span><br><span class="line">  include /etc/nginx/mime.types;</span><br><span class="line">  default_type application/octet-stream;</span><br><span class="line">  access_log /var/log/nginx/access.log;</span><br><span class="line">  error_log /var/log/nginx/error.log;</span><br><span class="line">  gzip on;</span><br><span class="line">  gzip_disable &quot;msie6&quot;;</span><br><span class="line">  include /etc/nginx/conf.d/*.conf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 nginx/global.conf 中, 是我们网站的配置. 可以看到我们将网站的 root 指定为在 Dockerfile 中创建的目录 /var/www/html/website, 并且也指定了对应的日志目录. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">        listen          0.0.0.0:80;</span><br><span class="line">        server_name     _;</span><br><span class="line"></span><br><span class="line">        root            /var/www/html/website;</span><br><span class="line">        index           index.html index.htm;</span><br><span class="line"></span><br><span class="line">        access_log      /var/log/nginx/default_access.log;</span><br><span class="line">        error_log       /var/log/nginx/default_error.log;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Build"><a href="#Build" class="headerlink" title="Build"></a>Build</h2><p>完成了上面的准备工作后, 我们就可以开始 build 阶段的工作啦!  这一步只需要一条命令即可, 不过一定记得执行的时候一定切换到 Dockerfile 文件所在的目录中哦! 另外命令的最后有一个点表示 Dockerfile的路径, 千万别漏啦.(当然你也可以写 Dockerfile 的绝对路径. )</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker build -t &quot;m4n/nginx_demo&quot; .</span><br></pre></td></tr></table></figure>
-
-<p>随后docker 就会依据你的 Dockerfile 中的指令一步一步完成 image 的打包操作. 很快你的 image 就制作完毕了.</p>
-<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>image 制作完毕后, 我们可以试试看用它拉起一个镜像:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ docker run -d -p 80 --name first_site -v $PWD/website:/var/www/html/website m4n/nginx_demo nginx</span><br></pre></td></tr></table></figure>
-
-<p>我们来了解下这条命令中的几个参数:</p>
-<ul>
-<li>-d 后台运行容器  </li>
-<li>-p: 端口映射. 比如 -p 3333:80 指定主机的3333端口映射到容器的80端口; 直接写也表示直接将宿主机的 80 端口映射到容器的端口 80  </li>
-<li>-v 本地目录:容器目录. 将宿主机本地目录中的 website 链接到容器中的 /var/www/html/website 这个目录中. ( /var/www/html/website 就是上面 docker image 中的 nginx 存放站点文件的目录) 这种挂载卷的方式打通了宿主机与容器间的文件共享. 这样我们就可以在编辑本地website文件夹中的index.html内容的同时, 使得container 里的nginx 也能感知到这个变化. </li>
-</ul>
-<p>当然爱动脑筋的同学肯定想到了, 如果要对 nginx.conf 或者 global.conf 进行编辑, 只需要将它们与容器中的文件通过参数 -v 进行映射即可.</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run --name nginx -p 80:80 -v nginx/nginx.conf:/etc/nginx/nginx.conf -v /var/log:/var/log/nginx -v nginx/global.conf:/etc/nginx/conf.d/global.conf -d nginx</span><br></pre></td></tr></table></figure>
-
-<p>Dockerfile 的编写还有许多用法, 具体可以参考<a href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference</a></p>
-<script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>build</tag>
-        <tag>k8s</tag>
       </tags>
   </entry>
   <entry>
@@ -417,6 +417,133 @@
       </tags>
   </entry>
   <entry>
+    <title>nmap</title>
+    <url>/cn/nmap/</url>
+    <content><![CDATA[<p>nmap 可以用来快速发现网络中的主机以及其监听的端口. 同时 nmap 还可以猜测目标机器的操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
+<p>nmap 扫描结果中常见的状态有:</p>
+<ul>
+<li>Open: 监听并接受连接的端口</li>
+<li>Closed: 未开放但是对于 nmap 的探测做出反映的端口. 可用于判断主机开机状态和 OS 的探测</li>
+<li>Filtered: 端口前可能有 firewall 设备,丢弃了探测包或者返回了无法判断的应答,比如 destination unreachable</li>
+<li>Unfiltered: 端口可达但是 nmap 无法判断端口是否处于 open 状态.</li>
+<li>open|filtered: 端口未对 nmap 探测做出反映.可能 nmap 探测包被 firewall 丢弃,或者端口的响应报文被丢弃</li>
+</ul>
+<h2 id="扫描局域网主机"><a href="#扫描局域网主机" class="headerlink" title="扫描局域网主机"></a>扫描局域网主机</h2><p>如果需要扫描的网段为内网 IP 段, nmap 默认会使用 arp 请求来探测内网主机. 这个方法的好处是可以尽量隐藏扫描的意图.因为其他的高级扫描类型可能会产生大量的流量,从而很容易被发现. 更加高级的扫描应该只针对那些确定存在的主机,而不是直接扫描全网从而造成大量的流量.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -PR -sn 192.168.1.0/24</span><br></pre></td></tr></table></figure>
+
+<p>可以通过这个命令直接生成包含 IP 地址的列表文件:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -PR -sn 192.168.1.0/24 | awk &#x27;/Nmap scan/&#123;gsub(/[()]/,&quot;&quot;,$NF); print $NF &gt; &quot;nmap_scanned_ips&quot;&#125;&#x27;</span><br></pre></td></tr></table></figure>
+
+<h2 id="扫描外网主机"><a href="#扫描外网主机" class="headerlink" title="扫描外网主机"></a>扫描外网主机</h2><p>通过 Layer 3 的 ICMP echo request 探测目标主机</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo nmap -PE -sn scanme.nmap.org</span><br></pre></td></tr></table></figure>
+
+<p>通过 Layer 4 的 ACK 探测目标主机, 收到 RST 表示目标主机处于up:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo nmap -PA80 -sn scanme.nmap.org</span><br></pre></td></tr></table></figure>
+
+<h2 id="列出目标主机监听的端口"><a href="#列出目标主机监听的端口" class="headerlink" title="列出目标主机监听的端口"></a>列出目标主机监听的端口</h2><p>nmap 可以检测某个 IP, 多个 IP 或者一个网段内 IP 地址的监听端口(默认tcp):</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.1</span><br><span class="line">nmap 10.0.0.1 10.0.0.20 10.0.0.60</span><br><span class="line">nmap 10.0.0.0/24</span><br><span class="line">nmap 10.0.0.*</span><br></pre></td></tr></table></figure>
+<p>扫描文件中列出的主机列表</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -iL /tmp/test.txt</span><br><span class="line"></span><br><span class="line">cat /tmp/test.txt</span><br><span class="line">server1.cyberciti.biz</span><br><span class="line">192.168.1.0/24</span><br><span class="line">192.168.1.1/24</span><br><span class="line">10.1.2.3</span><br><span class="line">localhost</span><br></pre></td></tr></table></figure>
+<p>排除10.0.0.60 和 10.0.0.80</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.0/24 --exclude 10.0.0.60,10.0.0.80 </span><br></pre></td></tr></table></figure>
+<p>排除exclude.txt文件内主机:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.0/24 -iL /tmp/scanlist.txt --excludefile /tmp/exclude.txt</span><br></pre></td></tr></table></figure>
+<p>扫描 IP地址 末尾 1~20 主机:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.1-20 </span><br></pre></td></tr></table></figure>
+
+<h2 id="查找监听特定端口的主机"><a href="#查找监听特定端口的主机" class="headerlink" title="查找监听特定端口的主机"></a>查找监听特定端口的主机</h2><p>查找所有开放 22,80,443 端口的主机:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -p 22,80,443 -il iplist.txt</span><br></pre></td></tr></table></figure>
+
+<h2 id="检测主机前是否有-firewall"><a href="#检测主机前是否有-firewall" class="headerlink" title="检测主机前是否有 firewall"></a>检测主机前是否有 firewall</h2><p>用来检测主机前是否有防火墙. -sA 也被称为 ACK Scan. 注意其目的不是绕过防火墙, 而是检测是否有防火墙存在. 当被检测主机接受到 ACK 时, 无论端口是否处于 open 状态都会直接返回 RST. </p>
+<ul>
+<li>如果 nmap 收到 RST 包, 则表示数据包并没有经过防火墙; </li>
+<li>如果收到 ICMP unreachable error (type 3, code 1, 2, 3, 9, 10, or 13), 或者没有任何回应数据包则表示 ACK 可能被防火墙丢弃.</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap -sA 10.154.172.172</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:31 CST</span><br><span class="line">Nmap scan report for 10.154.172.172</span><br><span class="line">Host is up (0.00070s latency).</span><br><span class="line">All 1000 scanned ports on 10.154.172.172 are filtered</span><br><span class="line">MAC Address: 00:50:56:86:47:46 (VMware)</span><br></pre></td></tr></table></figure>
+
+<h2 id="扫描-udp-端口"><a href="#扫描-udp-端口" class="headerlink" title="扫描 udp 端口"></a>扫描 udp 端口</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#sudo nmap -sU -iL list.name</span><br></pre></td></tr></table></figure>
+
+<h2 id="获取服务版本信息"><a href="#获取服务版本信息" class="headerlink" title="获取服务版本信息"></a>获取服务版本信息</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#sudo nmap -sV -iL list.name</span><br></pre></td></tr></table></figure>
+
+<h2 id="猜测操作系统版本"><a href="#猜测操作系统版本" class="headerlink" title="猜测操作系统版本"></a>猜测操作系统版本</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 对主机进行全面检查: OS detection, version detection, script scanning, and traceroute</span><br><span class="line">nmap -v -A 192.168.1.254</span><br><span class="line"></span><br><span class="line"># 对主机只进行操作系统猜测, 当Nmap无法确定所检测的操作系统时，会尽可能地提供最相近的匹配，Nmap默认 进行这种匹配，使用上述任一个选项使得Nmap的推测更加有效</span><br><span class="line">nmap -v -O --osscan-guess 10.0.0.1</span><br><span class="line">nmap -v -O --osscan-guess --fuzzy 10.0.0.1</span><br></pre></td></tr></table></figure>
+
+
+
+
+<h2 id="扫描-IPV6-地址"><a href="#扫描-IPV6-地址" class="headerlink" title="扫描 IPV6 地址"></a>扫描 IPV6 地址</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -6 IPv6-Address-Here</span><br><span class="line">nmap -6 server1.cyberciti.biz</span><br><span class="line">nmap -6 2607:f0d0:1002:51::4</span><br><span class="line">nmap -v A -6 2607:f0d0:1002:51::4</span><br></pre></td></tr></table></figure>
+
+<h2 id="快速扫描子网内-up-主机"><a href="#快速扫描子网内-up-主机" class="headerlink" title="快速扫描子网内 up 主机"></a>快速扫描子网内 up 主机</h2><p>在特权账号下 nmap 使用 ICMP echo request, TCP SYN to port 443, TCP ACK to port 80, and an ICMP timestamp 来探测网络中的主机, 而对于非特权用户, nmap 只会使用 80 或者 443 来进行扫描. </p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap -sP 10.88.0.0/24</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:00 CST</span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up (0.00089s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.115</span><br><span class="line">Host is up (0.0010s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5C:19 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.116</span><br><span class="line">Host is up (0.00062s latency).</span><br><span class="line">MAC Address: 00:50:56:86:3C:3A (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.129</span><br><span class="line">Host is up (0.00051s latency).</span><br><span class="line">MAC Address: 00:50:56:86:90:5D (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.153</span><br><span class="line">Host is up (0.00083s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5A:02 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.162</span><br><span class="line">Host is up (0.0042s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.200</span><br><span class="line">Host is up.</span><br><span class="line">Nmap done: 256 IP addresses (7 hosts up) scanned in 3.98 seconds</span><br></pre></td></tr></table></figure>
+
+<h2 id="显示-nmap-发出的包"><a href="#显示-nmap-发出的包" class="headerlink" title="显示 nmap 发出的包"></a>显示 nmap 发出的包</h2><p>另外如果要观察 nmap 发送了哪些扫描包, 可以加上 <code>--packet-trace</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip 10.88.0.0/24</span><br></pre></td></tr></table></figure>
+
+<h2 id="控制-nmap-的扫描速度"><a href="#控制-nmap-的扫描速度" class="headerlink" title="控制 nmap 的扫描速度"></a>控制 nmap 的扫描速度</h2><p>nmap 的扫描速度范围为 0~5, 默认是 3. 0 表示最慢但是可以绕过 IDS 的检测, 而 5 表示最快.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -T0-5 10.88.0.0/24</span><br></pre></td></tr></table></figure>
+
+<h2 id="伪造-nmap-的源-IP-或者-MAC-地址"><a href="#伪造-nmap-的源-IP-或者-MAC-地址" class="headerlink" title="伪造 nmap 的源 IP 或者 MAC 地址"></a>伪造 nmap 的源 IP 或者 MAC 地址</h2><p>为了隐藏扫描的源 IP 地址,可以使用如下命令. 例子中 nmap 使用 20 个随机的源地址进行扫描.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.1 -D RND:20</span><br></pre></td></tr></table></figure>
+
+<p>为了隐藏 MAC 地址</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 192.168.1.0/24 --spoof-mac 0</span><br></pre></td></tr></table></figure>
+
+<h2 id="乱序扫描"><a href="#乱序扫描" class="headerlink" title="乱序扫描"></a>乱序扫描</h2><p>nmap 默认按数字顺序扫描主机. 通过乱序扫描可以躲避 IDS 设备的检查.</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -iL iplist.name --randomize-hosts</span><br></pre></td></tr></table></figure>
+
+<h2 id="分片扫描"><a href="#分片扫描" class="headerlink" title="分片扫描"></a>分片扫描</h2><p>将数据包拆成小的分片以躲避检测.(目前很多 IDS 都有能力探测分片扫描,但是可以作为一种备用的方法尝试)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 192.168.1.1 -f</span><br></pre></td></tr></table></figure>
+
+<h2 id="列出-nmap-扫描结果的理由"><a href="#列出-nmap-扫描结果的理由" class="headerlink" title="列出 nmap 扫描结果的理由"></a>列出 nmap 扫描结果的理由</h2><p><code>--reason</code> 可以写明 nmap 得出扫描结果的依据, 比如下面的例子中 nmap 是收到了 ICMP echo-reply 来判定 10.88.0.105 处于 up 状态</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip --reason 10.88.0.0/24</span><br><span class="line"></span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up, received echo-reply ttl 255 (0.00041s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br></pre></td></tr></table></figure>
+
+<h2 id="用-nmap-检测-vulnerability"><a href="#用-nmap-检测-vulnerability" class="headerlink" title="用 nmap 检测 vulnerability"></a>用 nmap 检测 vulnerability</h2><p>nmap 还可以用来扫描漏洞. nmap 的官网上提供了许多用来扫描漏洞的 script.(后缀为 nse 的文件). 而 kali 中这些 script 默认存放位置为: /usr/share/nmap/scripts</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -iL iplist.txt --script smb-vuln-ms17-010.nse</span><br><span class="line">nmap -iL iplist.txt --script ftp-vsftpd-backdoor -p 21</span><br></pre></td></tr></table></figure>
+
+<p>另外 nmap 还可以通过下面的方法扫描批量的漏洞</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -iL iplist.txt --script vuln</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="检测-TLS-服务端支持的-cipher-list"><a href="#检测-TLS-服务端支持的-cipher-list" class="headerlink" title="检测 TLS 服务端支持的 cipher list"></a>检测 TLS 服务端支持的 cipher list</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ nmap --script ssl-enum-ciphers -p 443 phishme.com</span><br><span class="line"></span><br><span class="line">Starting Nmap 6.25 ( http://nmap.org ) at 2014-10-21 16:56 PDT</span><br><span class="line">Nmap scan report <span class="keyword">for</span> phishme.com (198.90.20.111)</span><br><span class="line">Host is up (0.011s latency).</span><br><span class="line">PORT STATE SERVICE</span><br><span class="line">443/tcp open https</span><br><span class="line">| ssl-enum-ciphers:</span><br><span class="line">| SSLv3:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.0:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.1:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.2:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">|_ least strength: strong</span><br><span class="line"></span><br><span class="line">Nmap <span class="keyword">done</span>: 1 IP address (1 host up) scanned <span class="keyword">in</span> 3.46 seconds</span><br></pre></td></tr></table></figure>
+
+<h2 id="检测-SSH-服务端支持的Cipher"><a href="#检测-SSH-服务端支持的Cipher" class="headerlink" title="检测 SSH 服务端支持的Cipher"></a>检测 SSH 服务端支持的Cipher</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap --script ssh2-enum-algos -sV -p 22 10.155.216.4</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-01 20:58 CST</span><br><span class="line">Nmap scan report for 10.155.216.4</span><br><span class="line">Host is up (0.0011s latency).</span><br><span class="line"></span><br><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 7.4 (protocol 2.0)</span><br><span class="line">| ssh2-enum-algos:</span><br><span class="line">|   kex_algorithms: (4)</span><br><span class="line">|       ecdh-sha2-nistp256</span><br><span class="line">|       ecdh-sha2-nistp384</span><br><span class="line">|       diffie-hellman-group14-sha1</span><br><span class="line">|       diffie-hellman-group-exchange-sha1</span><br><span class="line">|   server_host_key_algorithms: (5)</span><br><span class="line">|       ssh-rsa</span><br><span class="line">|       rsa-sha2-512</span><br><span class="line">|       rsa-sha2-256</span><br><span class="line">|       ecdsa-sha2-nistp256</span><br><span class="line">|       ssh-ed25519</span><br><span class="line">|   encryption_algorithms: (8)</span><br><span class="line">|       aes128-gcm@openssh.com</span><br><span class="line">|       aes256-gcm@openssh.com</span><br><span class="line">|       aes128-cbc</span><br><span class="line">|       aes256-cbc</span><br><span class="line">|       aes128-ctr</span><br><span class="line">|       aes192-ctr</span><br><span class="line">|       aes256-ctr</span><br><span class="line">|       aes192-cbc</span><br><span class="line">|   mac_algorithms: (1)</span><br><span class="line">|       hmac-sha1</span><br><span class="line">|   compression_algorithms: (2)</span><br><span class="line">|       none</span><br><span class="line">|_      zlib@openssh.com</span><br><span class="line"></span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>oscp</category>
+      </categories>
+      <tags>
+        <tag>nmap</tag>
+        <tag>scanner</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>树莓派踩坑指南之外挂硬盘</title>
+    <url>/cn/pi-hard-disk/</url>
+    <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
+<span id="more"></span>
+
+<p>解决方法：</p>
+<ol>
+<li>查看自己硬盘的信息. 其中 JMS578 就是系统识别的 USB 硬盘</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@ubuntu:~# lsusb</span><br><span class="line">Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br><span class="line">Bus 002 Device 002: ID 0080:a001 Unknown JMS578 based SATA bridge</span><br><span class="line">Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub</span><br><span class="line">Bus 001 Device 002: ID 2109:3431 VIA Labs, Inc. Hub</span><br><span class="line">Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>编辑 /boot/cmdline.txt. 这个文件根据系统安装方式的不同，有可能需要将 tf 卡直接挂载到电脑上才能进行读取编辑。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">usb-storage.quirks=0080:a001:u console=serial0,115200 console=tty1 root=PARTUUID=dc77c2e2-02 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>完成后重启再查看问题是否解决。另外在 /etc/fstab 中挂载磁盘时建议加入 nofail 参数，这样在磁盘挂载出现问题时也不至于无法访问系统。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2 /mnt ext4 defaults,nofail 0 0</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>raspberry pi</category>
+      </categories>
+      <tags>
+        <tag>硬盘</tag>
+        <tag>quirk</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>初试 oh-my-zsh</title>
     <url>/cn/ohmyzsh/</url>
     <content><![CDATA[<p>最近发现越来越多的同学都转向了zsh。其实 bash 用了好多年也并没有发现不顺手的地方。不过zsh貌似支持许多很酷的第三方插件，所以先记录下在 macos 中如何快速切换到 zsh 环境。</p>
@@ -451,35 +578,6 @@
       </categories>
       <tags>
         <tag>zsh</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>树莓派踩坑指南之外挂硬盘</title>
-    <url>/cn/pi-hard-disk/</url>
-    <content><![CDATA[<p>树莓派 4b 通过 USB 外挂硬盘经常会遇到各种奇葩问题，比如：硬盘可以识别但重启后无法识别；/etc/fstab 挂载硬盘重启后树莓派无法登录；硬盘挂载后时不时掉线，需要手动挂载等问题。这些可能都和硬盘盒的 UAS 有关。。。</p>
-<span id="more"></span>
-
-<p>解决方法：</p>
-<ol>
-<li>查看自己硬盘的信息. 其中 JMS578 就是系统识别的 USB 硬盘</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">root@ubuntu:~# lsusb</span><br><span class="line">Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br><span class="line">Bus 002 Device 002: ID 0080:a001 Unknown JMS578 based SATA bridge</span><br><span class="line">Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub</span><br><span class="line">Bus 001 Device 002: ID 2109:3431 VIA Labs, Inc. Hub</span><br><span class="line">Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>编辑 /boot/cmdline.txt. 这个文件根据系统安装方式的不同，有可能需要将 tf 卡直接挂载到电脑上才能进行读取编辑。</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">usb-storage.quirks=0080:a001:u console=serial0,115200 console=tty1 root=PARTUUID=dc77c2e2-02 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>完成后重启再查看问题是否解决。另外在 /etc/fstab 中挂载磁盘时建议加入 nofail 参数，这样在磁盘挂载出现问题时也不至于无法访问系统。</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">UUID=adc0b8fe-2b19-4954-99bc-069e7a3461c2 /mnt ext4 defaults,nofail 0 0</span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>raspberry pi</category>
-      </categories>
-      <tags>
-        <tag>硬盘</tag>
-        <tag>quirk</tag>
       </tags>
   </entry>
   <entry>
@@ -525,48 +623,6 @@
         <tag>pod</tag>
         <tag>service</tag>
         <tag>iptables</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>nmap</title>
-    <url>/cn/nmap/</url>
-    <content><![CDATA[<p>nmap 可以用来快速发现网络中的主机 IP 以及监听的端口. 同时 nmap 还可以猜测对端操作系统的类型, 获取服务器的证书, 到达目标主机的 traceroute 信息等. 结合 “–script” 参数还可以调用扫描脚本对特定服务进行更加精细化的扫描. </p>
-<span id="more"></span>
-
-<h2 id="检测目标主机监听端口"><a href="#检测目标主机监听端口" class="headerlink" title="检测目标主机监听端口"></a>检测目标主机监听端口</h2><p>nmap 可以检测某个 IP, 多个 IP 或者一个网段内 IP 地址的监听端口(默认tcp):</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap 10.0.0.1</span><br><span class="line">nmap 10.0.0.1 10.0.0.20 10.0.0.60</span><br><span class="line">nmap 10.0.0.0/24</span><br><span class="line">nmap 10.0.0.*</span><br><span class="line"></span><br><span class="line"># 扫描文件中列出的主机列表</span><br><span class="line">nmap -iL /tmp/test.txt</span><br><span class="line"></span><br><span class="line">cat /tmp/test.txt</span><br><span class="line">server1.cyberciti.biz</span><br><span class="line">192.168.1.0/24</span><br><span class="line">192.168.1.1/24</span><br><span class="line">10.1.2.3</span><br><span class="line">localhost</span><br><span class="line"></span><br><span class="line"># 排除10.0.0.60 和 10.0.0.80</span><br><span class="line">nmap 10.0.0.0/24 --exclude 10.0.0.60,10.0.0.80 </span><br><span class="line"></span><br><span class="line"># 排除exclude.txt文件内主机</span><br><span class="line">nmap 10.0.0.0/24 -iL /tmp/scanlist.txt --excludefile /tmp/exclude.txt</span><br><span class="line"></span><br><span class="line"># 扫描 1~20 主机</span><br><span class="line">nmap 10.0.0.1-20 </span><br></pre></td></tr></table></figure>
-
-
-<h2 id="猜测操作系统版本"><a href="#猜测操作系统版本" class="headerlink" title="猜测操作系统版本"></a>猜测操作系统版本</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 对主机进行全面检查: OS detection, version detection, script scanning, and traceroute</span><br><span class="line">nmap -v -A 192.168.1.254</span><br><span class="line"></span><br><span class="line"># 对主机只进行操作系统猜测, 当Nmap无法确定所检测的操作系统时，会尽可能地提供最相近的匹配，Nmap默认 进行这种匹配，使用上述任一个选项使得Nmap的推测更加有效</span><br><span class="line">nmap -v -O --osscan-guess 10.0.0.1</span><br><span class="line">nmap -v -O --osscan-guess --fuzzy 10.0.0.1</span><br></pre></td></tr></table></figure>
-
-<h2 id="检测主机前是否有-firewall"><a href="#检测主机前是否有-firewall" class="headerlink" title="检测主机前是否有 firewall"></a>检测主机前是否有 firewall</h2><p>用来检测主机前是否有防火墙. -sA 也被称为 ACK Scan. 注意其目的不是绕过防火墙, 而是检测是否有防火墙存在. 当被检测主机接受到 ACK 时, 无论端口是否处于 open 状态都会直接返回 RST. </p>
-<ul>
-<li>如果 nmap 收到 RST 包, 则表示数据包并没有经过防火墙; </li>
-<li>如果收到 ICMP unreachable error (type 3, code 1, 2, 3, 9, 10, or 13), 或者没有任何回应数据包则表示 ACK 可能被防火墙丢弃.</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap -sA 10.154.172.172</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:31 CST</span><br><span class="line">Nmap scan report for 10.154.172.172</span><br><span class="line">Host is up (0.00070s latency).</span><br><span class="line">All 1000 scanned ports on 10.154.172.172 are filtered</span><br><span class="line">MAC Address: 00:50:56:86:47:46 (VMware)</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="扫描-IPV6-地址"><a href="#扫描-IPV6-地址" class="headerlink" title="扫描 IPV6 地址"></a>扫描 IPV6 地址</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -6 IPv6-Address-Here</span><br><span class="line">nmap -6 server1.cyberciti.biz</span><br><span class="line">nmap -6 2607:f0d0:1002:51::4</span><br><span class="line">nmap -v A -6 2607:f0d0:1002:51::4</span><br></pre></td></tr></table></figure>
-
-<h2 id="快速扫描子网内-up-主机"><a href="#快速扫描子网内-up-主机" class="headerlink" title="快速扫描子网内 up 主机"></a>快速扫描子网内 up 主机</h2><p>在特权账号下 nmap 使用 ICMP echo request, TCP SYN to port 443, TCP ACK to port 80, and an ICMP timestamp 来探测网络中的主机, 而对于非特权用户, nmap 只会使用 80 或者 443 来进行扫描. </p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap -sP 10.88.0.0/24</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-02 19:00 CST</span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up (0.00089s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.115</span><br><span class="line">Host is up (0.0010s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5C:19 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.116</span><br><span class="line">Host is up (0.00062s latency).</span><br><span class="line">MAC Address: 00:50:56:86:3C:3A (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.129</span><br><span class="line">Host is up (0.00051s latency).</span><br><span class="line">MAC Address: 00:50:56:86:90:5D (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.153</span><br><span class="line">Host is up (0.00083s latency).</span><br><span class="line">MAC Address: 00:50:56:86:5A:02 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.162</span><br><span class="line">Host is up (0.0042s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br><span class="line">Nmap scan report for 10.88.0.200</span><br><span class="line">Host is up.</span><br><span class="line">Nmap done: 256 IP addresses (7 hosts up) scanned in 3.98 seconds</span><br></pre></td></tr></table></figure>
-
-<h2 id="显示-nmap-发出的包"><a href="#显示-nmap-发出的包" class="headerlink" title="显示 nmap 发出的包"></a>显示 nmap 发出的包</h2><p>另外如果要观察 nmap 发送了哪些扫描包, 可以加上 <code>--packet-trace</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip 10.88.0.0/24</span><br></pre></td></tr></table></figure>
-
-<h2 id="列出-nmap-扫描结果的理由"><a href="#列出-nmap-扫描结果的理由" class="headerlink" title="列出 nmap 扫描结果的理由"></a>列出 nmap 扫描结果的理由</h2><p><code>--reason</code> 可以写明 nmap 得出扫描结果的依据, 比如下面的例子中 nmap 是收到了 ICMP echo-reply 来判定 10.88.0.105 处于 up 状态</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">nmap -sP --packet-trace --send-ip --reason 10.88.0.0/24</span><br><span class="line"></span><br><span class="line">Nmap scan report for 10.88.0.105</span><br><span class="line">Host is up, received echo-reply ttl 255 (0.00041s latency).</span><br><span class="line">MAC Address: 00:50:56:86:D3:88 (VMware)</span><br></pre></td></tr></table></figure>
-
-<h2 id="检测-TLS-服务端支持的-cipher-list"><a href="#检测-TLS-服务端支持的-cipher-list" class="headerlink" title="检测 TLS 服务端支持的 cipher list"></a>检测 TLS 服务端支持的 cipher list</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ nmap --script ssl-enum-ciphers -p 443 phishme.com</span><br><span class="line"></span><br><span class="line">Starting Nmap 6.25 ( http://nmap.org ) at 2014-10-21 16:56 PDT</span><br><span class="line">Nmap scan report <span class="keyword">for</span> phishme.com (198.90.20.111)</span><br><span class="line">Host is up (0.011s latency).</span><br><span class="line">PORT STATE SERVICE</span><br><span class="line">443/tcp open https</span><br><span class="line">| ssl-enum-ciphers:</span><br><span class="line">| SSLv3:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.0:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.1:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">| TLSv1.2:</span><br><span class="line">| ciphers:</span><br><span class="line">| TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_DHE_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_3DES_EDE_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_128_GCM_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_CBC_SHA256 - strong</span><br><span class="line">| TLS_RSA_WITH_AES_256_GCM_SHA384 - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_128_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_CAMELLIA_256_CBC_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_RC4_128_SHA - strong</span><br><span class="line">| TLS_RSA_WITH_SEED_CBC_SHA - strong</span><br><span class="line">| compressors:</span><br><span class="line">| NULL</span><br><span class="line">|_ least strength: strong</span><br><span class="line"></span><br><span class="line">Nmap <span class="keyword">done</span>: 1 IP address (1 host up) scanned <span class="keyword">in</span> 3.46 seconds</span><br></pre></td></tr></table></figure>
-
-<h2 id="检测-SSH-服务端支持的Cipher"><a href="#检测-SSH-服务端支持的Cipher" class="headerlink" title="检测 SSH 服务端支持的Cipher"></a>检测 SSH 服务端支持的Cipher</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># nmap --script ssh2-enum-algos -sV -p 22 10.155.216.4</span><br><span class="line">Starting Nmap 7.70 ( https://nmap.org ) at 2021-09-01 20:58 CST</span><br><span class="line">Nmap scan report for 10.155.216.4</span><br><span class="line">Host is up (0.0011s latency).</span><br><span class="line"></span><br><span class="line">PORT   STATE SERVICE VERSION</span><br><span class="line">22/tcp open  ssh     OpenSSH 7.4 (protocol 2.0)</span><br><span class="line">| ssh2-enum-algos:</span><br><span class="line">|   kex_algorithms: (4)</span><br><span class="line">|       ecdh-sha2-nistp256</span><br><span class="line">|       ecdh-sha2-nistp384</span><br><span class="line">|       diffie-hellman-group14-sha1</span><br><span class="line">|       diffie-hellman-group-exchange-sha1</span><br><span class="line">|   server_host_key_algorithms: (5)</span><br><span class="line">|       ssh-rsa</span><br><span class="line">|       rsa-sha2-512</span><br><span class="line">|       rsa-sha2-256</span><br><span class="line">|       ecdsa-sha2-nistp256</span><br><span class="line">|       ssh-ed25519</span><br><span class="line">|   encryption_algorithms: (8)</span><br><span class="line">|       aes128-gcm@openssh.com</span><br><span class="line">|       aes256-gcm@openssh.com</span><br><span class="line">|       aes128-cbc</span><br><span class="line">|       aes256-cbc</span><br><span class="line">|       aes128-ctr</span><br><span class="line">|       aes192-ctr</span><br><span class="line">|       aes256-ctr</span><br><span class="line">|       aes192-cbc</span><br><span class="line">|   mac_algorithms: (1)</span><br><span class="line">|       hmac-sha1</span><br><span class="line">|   compression_algorithms: (2)</span><br><span class="line">|       none</span><br><span class="line">|_      zlib@openssh.com</span><br><span class="line"></span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://cdn.jsdelivr.net/npm/hexo-simple-mindmap@0.7.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>oscp</category>
-      </categories>
-      <tags>
-        <tag>nmap</tag>
-        <tag>scanner</tag>
       </tags>
   </entry>
   <entry>
